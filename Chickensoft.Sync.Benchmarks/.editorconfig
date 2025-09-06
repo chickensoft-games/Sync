@@ -1,0 +1,5 @@
+root = false
+
+[*.cs]
+# types that own disposable fields should be disposable :P
+dotnet_diagnostic.CA1001.severity = none

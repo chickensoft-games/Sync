@@ -1,0 +1,12 @@
+**/coverage/*
+!**/coverage/.gdignore
+nupkg/
+.godot/
+bin/
+obj/
+.generated/
+.vs/
+.DS_Store
+*.DotSettings.user
+*.binlog
+Chickensoft.Sync.Benchmarks/BenchmarkDotNet.Artifacts/
