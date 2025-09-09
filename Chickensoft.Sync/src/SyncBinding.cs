@@ -56,7 +56,11 @@ public abstract class SyncBinding : ISyncBinding {
 
   private static readonly List<object> _emptyCallbacks = [];
   private bool _isDisposed;
-  internal ISyncSubject? _subject;
+  /// <summary>
+  /// The subject that this binding is currently bound to, or null if it has been
+  /// disposed.
+  /// </summary>
+  protected internal ISyncSubject? _subject;
 
   private ObjectDisposedException DisposedException =>
     new("This SyncBinding has been disposed and can no longer be used.");
