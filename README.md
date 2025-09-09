@@ -20,7 +20,7 @@ Sync is a C# library that works everywhere `netstandard2.1` works.
 
 - ✅ Simplified terminology tailored for game development use cases.
 - ✅ Avoids boxing value types and minimizes heap allocations to reduce garbage collector pressure (suitable for games).
-- ✅ Includes observable collections such as `AutoList<T>`, `AutoSet<T>`, and `AutoDictionary<TKey, TValue>` which are built on top of .NET's standard collection types.
+- ✅ Includes observable collections such as `AutoList<T>`, `AutoSet<T>`, and `AutoMap<TKey, TValue>` which are built on top of .NET's standard collection types.
 - ✅ Provides an observable property/value (or `BehaviorSubject` in [ReactiveX](https://reactivex.io/documentation/subject.html) terminology) called `AutoValue<T>`.
 - ✅ Errors stop execution immediately, same as ordinary C# code.
 - ✅ Consistent, fluent bindings tailored for each reactive primitive.
