@@ -49,7 +49,9 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   private readonly record struct UpdateOp(T Value);
   //    these 2 sync operations are used to invoke callbacks as soon as possible
   //    after they're added to mimic a BehaviorSubject
-  private readonly record struct SyncOp(Action<T> Callback);
+  private readonly record struct SyncOp(
+    Action<T> Callback, Func<T, bool> Condition
+  );
   private readonly record struct SyncDerivedOp(
     Action<T> Callback, Func<T, bool> Condition
   );
@@ -73,15 +75,15 @@ public sealed class AutoValue<T> : IAutoValue<T>,
     public Binding OnValue(
       Action<T> callback, Func<T, bool>? condition = null
     ) {
+      bool predicate(T value) => condition?.Invoke(value) ?? true;
+
       AddCallback(
         (in UpdateBroadcast broadcast) => callback(broadcast.Value),
-        condition is not null
-          ? (in UpdateBroadcast broadcast) => condition(broadcast.Value)
-          : null
+        (in UpdateBroadcast broadcast) => predicate(broadcast.Value)
       );
 
       // schedule synchronization invocation for this callback with the current value
-      _subject!.Perform(new SyncOp(callback));
+      _subject!.Perform(new SyncOp(callback, predicate));
 
       return this;
     }
@@ -97,19 +99,21 @@ public sealed class AutoValue<T> : IAutoValue<T>,
     /// <returns>This binding (for chaining).</returns>
     public Binding OnValue<TDerived>(
       Action<TDerived> callback, Func<T, bool>? condition = null
-    )
-        where TDerived : T {
+    ) where TDerived : T {
+
+      bool predicate(T value) =>
+        value is TDerived && (condition?.Invoke(value) ?? true);
+
       AddCallback(
         (in UpdateBroadcast broadcast) => callback((TDerived)broadcast.Value!),
-        (in UpdateBroadcast broadcast) => broadcast.Value is TDerived &&
-          (condition?.Invoke(broadcast.Value) ?? true)
+        (in UpdateBroadcast broadcast) => predicate(broadcast.Value)
       );
 
       // schedule synchronization invocation for this callback with the current value
       _subject!.Perform(
         new SyncDerivedOp(
           Callback: (T value) => callback((TDerived)value!),
-          Condition: v => v is TDerived
+          Condition: predicate
         )
       );
 
@@ -177,8 +181,10 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   }
 
   void IPerform<SyncOp>.Perform(in SyncOp op) {
-    // synchronize specific callback as soon as possible after its initialization
-    op.Callback(_value);
+    if (op.Condition(_value)) {
+      // synchronize specific callback as soon as possible after its initialization
+      op.Callback(_value);
+    }
   }
 
   void IPerform<SyncDerivedOp>.Perform(in SyncDerivedOp op) {

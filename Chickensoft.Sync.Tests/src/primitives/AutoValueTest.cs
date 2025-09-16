@@ -46,9 +46,16 @@ public sealed class AutoValueTest {
 
     using var binding = autoValue.Bind()
       .OnValue(animal => log.Add($"animal {animal.Name}"))
+      .OnValue(
+        animal => log.Add($"animal with R name {animal.Name}"),
+        condition: (animal) => animal.Name.StartsWith('R'))
       .OnValue<Dog>(dog => log.Add($"dog {dog.Name}"))
       .OnValue<Poodle>((poodle) => log.Add($"poodle {poodle.Name}"))
-      .OnValue<Cat>(cat => log.Add($"cat {cat.Name}"));
+      .OnValue<Cat>(cat => log.Add($"cat {cat.Name}"))
+      .OnValue<Cat>(
+        cat => log.Add($"cat with S name {cat.Name}"),
+        condition: (cat) => cat.Name.StartsWith('S')
+      );
 
     log.ShouldBe(["animal Boots", "dog Boots"]);
     log.Clear();
@@ -63,7 +70,11 @@ public sealed class AutoValueTest {
     log.Clear();
 
     autoValue.Value = sven;
-    log.ShouldBe(["animal Sven", "cat Sven"]);
+    log.ShouldBe(["animal Sven", "cat Sven", "cat with S name Sven"]);
+    log.Clear();
+
+    autoValue.Value = new Dinosaur("Rex");
+    log.ShouldBe(["animal Rex", "animal with R name Rex"]);
   }
 
   [Fact]
