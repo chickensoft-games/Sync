@@ -50,6 +50,12 @@ public interface ISyncSubject : IDisposable {
   /// <param name="broadcast">The broadcast instance to send.</param>
   void Perform<TBroadcast>(in TBroadcast broadcast)
       where TBroadcast : struct;
+
+  /// <summary>
+  /// Clears all pending operations immediately. Safe to call any time before
+  /// the subject is disposed.
+  /// </summary>
+  void Clear();
 }
 
 /// <summary>
@@ -209,6 +215,13 @@ public sealed class SyncSubject : ISyncSubject {
     Process(in op);
 
     return;
+  }
+
+  /// <inheritdoc />
+  public void Clear() {
+    if (_isDisposed) { throw DisposedException; }
+
+    _ops.Clear();
   }
 
   private void Process() {

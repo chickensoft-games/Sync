@@ -234,4 +234,37 @@ public sealed class SyncSubjectTest {
     // subsequent dispose should do nothing :)
     Should.NotThrow(subject.Dispose);
   }
+
+  [Fact]
+  public void ClearThrowsDisposed() {
+    var subject = new SyncSubject(Nop);
+    subject.Dispose();
+
+    Should.Throw<ObjectDisposedException>(subject.Clear);
+  }
+
+  [Fact]
+  public void ClearsPendingOperations() {
+    var subject = BuildSubject();
+
+    var binding1 = new Mock<ISyncBinding>();
+
+    var calls = 0;
+
+    binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback((in int value) => {
+        calls++;
+
+        if (calls == 1) {
+          subject.Perform(2); // never happens because we clear
+          subject.Clear();
+        }
+      });
+
+    subject.AddBinding(binding1.Object);
+
+    subject.Perform(1);
+
+    calls.ShouldBe(1);
+  }
 }
