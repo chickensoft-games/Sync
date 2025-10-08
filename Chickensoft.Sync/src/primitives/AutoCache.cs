@@ -20,17 +20,32 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   public class Binding : SyncBinding {
     internal Binding(ISyncSubject subject) : base(subject) { }
 
-    public Binding OnValue<T>(Callback<T> callback) where T : struct {
-      AddCallback(callback);
+    public Binding OnValue<T>(
+      Callback<T> callback, Func<T, bool>? condition = null) where T : struct
+    {
+      bool predicate(T value) => condition?.Invoke(value) ?? true;
+
+      AddCallback(
+        (in T broadcast) => callback(broadcast),
+        (in T broadcast) => predicate(broadcast)
+      );
+
       return this;
     }
 
-    public Binding OnValue<T>(Action<T> action) {
-      AddCallback((in RefValue value) => {
-        if (value.Value is T tValue) {
-          action(tValue);
-        }
-      });
+    public Binding OnValue<T>(
+      Action<T> action, Func<T, bool>? condition = null)
+    {
+      bool predicate(T value) => condition?.Invoke(value) ?? true;
+
+      AddCallback(
+        (in RefValue value) => {
+          if (value.Value is T tValue) {
+            action(tValue);
+          }
+        },
+        (in RefValue value) => value.Value is T tValue && predicate(tValue)
+      );
 
       return this;
     }
@@ -80,6 +95,12 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     _subject.Perform(new PopOp());
   }
 
+  public void Push<T>(T value) where T : class {
+    _refDict[typeof(T)] = value;
+    _boxlessQueue.Enqueue(new RefValue(value));
+    _subject.Perform(new PopOp());
+  }
+
   public void Push(object value) {
     _refDict[value.GetType()] = value;
     _boxlessQueue.Enqueue(new RefValue(value));
@@ -95,6 +116,11 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   }
 
   public int Count => _refDict.Count + _valueDict.Count;
+
+  public void Clear() {
+    _refDict.Clear();
+    _valueDict.Clear();
+  }
 
   private readonly struct Passthrough : IBoxlessValueHandler {
     public readonly AutoCache Cache { get; }

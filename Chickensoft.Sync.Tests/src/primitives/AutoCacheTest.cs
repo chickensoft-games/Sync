@@ -29,7 +29,96 @@ public sealed class AutoCacheTest {
     cache.Push(3.14);
     cache.Push("hello");
 
+    cache.TryGetValue<int>(out var integer).ShouldBeTrue();
+    cache.TryGetValue<double>(out var dec).ShouldBeTrue();
+    cache.TryGetValue<string>(out var str).ShouldBeTrue();
+
+    integer.ShouldBe(5);
+    dec.ShouldBe(3.14);
+    str.ShouldBe("hello");
+
     values.ShouldBe([5, 3.14, "hello"]);
+  }
+
+  [Fact]
+  public void BindingRespectsDerivedTypes() {
+    var boots = new Dog("Boots");
+    var cookie = new Poodle("Cookie");
+    var brisket = new Poodle("Brisket");
+    var sven = new Cat("Sven");
+
+    var autoCache = new AutoCache();
+    var log = new List<string>();
+
+    using var binding = autoCache.Bind()
+      .OnValue<Animal>(animal => log.Add($"animal {animal.Name}"))
+      .OnValue<Animal>(
+        animal => log.Add($"animal with R name {animal.Name}"),
+        condition: (animal) => animal.Name.StartsWith('R'))
+      .OnValue<Dog>(dog => log.Add($"dog {dog.Name}"))
+      .OnValue<Poodle>((poodle) => log.Add($"poodle {poodle.Name}"))
+      .OnValue<Cat>(cat => log.Add($"cat {cat.Name}"))
+      .OnValue<Cat>(
+        cat => log.Add($"cat with S name {cat.Name}"),
+        condition: (cat) => cat.Name.StartsWith('S')
+      );
+
+    autoCache.Push(boots);
+
+    log.ShouldBe(["animal Boots", "dog Boots"]);
+    log.Clear();
+
+    autoCache.Push(cookie);
+
+    log.ShouldBe(["animal Cookie", "dog Cookie", "poodle Cookie"]);
+    log.Clear();
+
+    autoCache.Push(brisket);
+    log.ShouldBe(["animal Brisket", "dog Brisket", "poodle Brisket"]);
+    log.Clear();
+
+    autoCache.Push(sven);
+    log.ShouldBe(["animal Sven", "cat Sven", "cat with S name Sven"]);
+    log.Clear();
+
+    autoCache.Push(new Dinosaur("Rex"));
+    log.ShouldBe(["animal Rex", "animal with R name Rex"]);
+  }
+
+  [Fact]
+  public void TryGetValueReturnsFalseWhenCleared() {
+    var boots = new Dog("Boots");
+
+    var autoCache = new AutoCache();
+
+    autoCache.Push(boots);
+
+    autoCache.TryGetValue<Dog>(out var dog).ShouldBeTrue();
+    dog.ShouldBe(boots);
+
+    autoCache.Count.ShouldBe(1);
+    autoCache.Clear();
+    autoCache.Count.ShouldBe(0);
+
+    autoCache.TryGetValue<Dog>(out var nullDog).ShouldBeFalse();
+    nullDog.ShouldBeNull();
+  }
+
+  [Fact]
+  public void TryGetValueReturnsPushedType() {
+    var boots = new Dog("Boots");
+
+    var autoCache = new AutoCache();
+
+    autoCache.Push(boots);
+    autoCache.TryGetValue<Dog>(out var dog).ShouldBeTrue();
+    dog.ShouldBe(boots);
+
+    autoCache.Push<Animal>(boots);
+    autoCache.TryGetValue<Animal>(out var animal).ShouldBeTrue();
+    animal.ShouldBe(boots);
+
+    autoCache.Count.ShouldBe(2);
   }
 
   [Fact]
@@ -55,6 +144,28 @@ public sealed class AutoCacheTest {
     cache.TryGetValue<TestRef>(out var value).ShouldBeTrue();
     value.ShouldNotBeNull();
     value.Value.ShouldBe(5);
+  }
+
+  [Fact]
+  public void ClearsBindings() {
+    var autoCache = new AutoCache();
+    var values = new List<object>();
+
+    using var binding = autoCache.Bind();
+    binding.OnValue((in int v) => values.Add(v));
+
+    autoCache.Push(1);
+    autoCache.Push(2);
+
+    autoCache.TryGetValue<int>(out var value).ShouldBeTrue();
+    value.ShouldBe(2);
+
+    values.ShouldBe([1, 2]);
+    values.Clear();
+
+    autoCache.ClearBindings();
+    autoCache.Push(3);
+    values.ShouldBeEmpty();
   }
 
   [Fact]
