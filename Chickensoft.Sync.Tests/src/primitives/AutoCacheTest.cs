@@ -5,7 +5,7 @@ using Utopia;
 
 public sealed class AutoCacheTest {
   private readonly record struct TestValue(int Value);
-  private record TestRef(int Value);
+  private sealed record TestRef(int Value);
 
   [Fact]
   public void Initializes() {

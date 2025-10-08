@@ -16,9 +16,12 @@ public interface IAutoCache : IAutoObject<AutoCache.Binding> {
   /// <param name="value"></param>
   /// <typeparam name="T"></typeparam>
   /// <returns></returns>
-  bool TryGetValue<T>(out T value);
+  bool TryGetValue<T>(out T? value);
 }
 
+/// <summary>
+/// A cache that broadcasts the last value pushed to it to all subscribers.
+/// </summary>
 public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   // Atomic operations
   private readonly record struct PopOp;
@@ -26,6 +29,9 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   // Broadcasts
   private readonly record struct RefValue(object Value);
 
+  /// <summary>
+  /// A binding to an <see cref="AutoCache"/>.
+  /// </summary>
   public class Binding : SyncBinding {
     internal Binding(ISyncSubject subject) : base(subject) { }
 
@@ -57,14 +63,14 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     /// callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
     public Binding OnValue<T>(
-      Action<T> action, Func<T, bool>? condition = null)
+      Action<T> callback, Func<T, bool>? condition = null)
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
 
       AddCallback(
         (in RefValue value) => {
           if (value.Value is T tValue) {
-            action(tValue);
+            callback(tValue);
           }
         },
         (in RefValue value) => value.Value is T tValue && predicate(tValue)
@@ -81,7 +87,12 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   private readonly Dictionary<Type, object> _refDict;
 
   /// <summary>
+  /// <para>
+  /// Creates a new auto cache.
+  /// </para>
+  /// <para>
   /// A cache that broadcasts the last value pushed to it to all subscribers.
+  /// </para>
   /// </summary>
   public AutoCache() {
     _subject = new SyncSubject(this);
