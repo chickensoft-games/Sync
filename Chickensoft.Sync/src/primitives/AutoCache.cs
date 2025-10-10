@@ -63,7 +63,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     /// callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
     public Binding OnValue<T>(
-      Action<T> callback, Func<T, bool>? condition = null)
+      Action<T> callback, Func<T, bool>? condition = null) where T : class
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
 
