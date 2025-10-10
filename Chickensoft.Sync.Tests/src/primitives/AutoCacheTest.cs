@@ -135,15 +135,16 @@ public sealed class AutoCacheTest {
 
   [Fact]
   public void TryGetValueReturnsLatestRef() {
-    var cache = new AutoCache();
+    var autoCache = new AutoCache();
 
-    cache.Update(new TestRef(3));
-    cache.Update(new TestRef(10));
-    cache.Update(new TestRef(5));
+    autoCache.Update(new TestRef(3));
+    autoCache.Update(new TestRef(10));
+    autoCache.Update(new TestRef(5));
 
-    cache.TryGetValue<TestRef>(out var value).ShouldBeTrue();
+    autoCache.TryGetValue<TestRef>(out var value).ShouldBeTrue();
     value.ShouldNotBeNull();
     value.Value.ShouldBe(5);
+    autoCache.Count.ShouldBe(1);
   }
 
   [Fact]
@@ -166,6 +167,29 @@ public sealed class AutoCacheTest {
     autoCache.ClearBindings();
     autoCache.Update(3);
     values.ShouldBeEmpty();
+  }
+
+  [Fact]
+  public void ClearSetsCountToZero() {
+    var autoCache = new AutoCache();
+    var boots = new Dog("Boots");
+    var cookie = new Poodle("Cookie");
+
+    autoCache.Update(1);
+    autoCache.Update(2.5);
+    autoCache.Count.ShouldBe(2);
+
+    autoCache.Clear();
+    autoCache.Count.ShouldBe(0);
+
+    autoCache.Update(4);
+    autoCache.Update(9.5);
+    autoCache.Update(boots);
+    autoCache.Update(cookie);
+    autoCache.Count.ShouldBe(4);
+
+    autoCache.Clear();
+    autoCache.Count.ShouldBe(0);
   }
 
   [Fact]

@@ -108,6 +108,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   private readonly BoxlessQueue _boxlessQueue;
   private readonly Dictionary<Type, CachedValue> _valueDict;
   private readonly Dictionary<Type, object> _refDict;
+  private int _cacheCount;
 
   /// <summary>
   /// <para>
@@ -162,12 +163,16 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   public void Update<T>(in T value) where T : struct {
     if (_valueDict.TryGetValue(typeof(T), out var cachedValue)) {
       var cachedValueCast = (CachedValue<T>)cachedValue;
+      if (!cachedValueCast.HasValue) {
+        _cacheCount++;
+      }
       cachedValueCast.Value = value;
     }
     else {
       var newCachedValue = new CachedValue<T>();
       _valueDict[typeof(T)] = newCachedValue;
       newCachedValue.Value = value;
+      _cacheCount++;
     }
     _boxlessQueue.Enqueue(value);
     _subject.Perform(new PopOp());
@@ -196,7 +201,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   /// <summary>
   /// The combined count of all reference types and value types stored in the cache.
   /// </summary>
-  public int Count => _refDict.Count + _valueDict.Count;
+  public int Count => _refDict.Count + _cacheCount;
 
   /// <summary>
   /// Clears the cache of any stored values.
@@ -206,6 +211,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     foreach (var (_, value) in _valueDict) {
       value.Clear();
     }
+    _cacheCount = 0;
   }
 
   private readonly struct Passthrough : IBoxlessValueHandler {
