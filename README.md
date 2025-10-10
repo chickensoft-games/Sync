@@ -290,7 +290,7 @@ autoCache.Update(new UpdateName("Cookie"));
 autoCache.Update(new UpdateName("Brisket"));
 autoCache.Update(new UpdateName("Sven"));
 
-// After each udpate, the OnUpdate callback will be called.
+// After each update, the OnUpdate callback will be called.
 
 if(autoCache.TryGetValue<UpdateName>(out var update))
 { 
