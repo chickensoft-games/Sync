@@ -30,18 +30,28 @@ internal class CachedValue<T> : CachedValue {
 }
 
 /// <summary>
-/// A cache which stores values separated by type. On update, it broadcasts to
-/// all subscribers and stores the value based on the type given. This cache
-/// supports both reference types and value types.
+/// <para>
+/// A cache which stores values separated by type.
+/// </para>
+/// <para>
+/// On update, it broadcasts to all subscribers and stores the value based on
+/// the type given. You can then use the method <see cref="TryGetValue{T}(out T)"/>
+/// to get the last value updated of type `T`
+/// </para>
 /// </summary>
 public interface IAutoCache : IAutoObject<AutoCache.Binding> {
   /// <summary>
   /// Attempts to get the last value which was pushed to the cache of a specific
   /// reference or value type.
   /// </summary>
-  /// <param name="value"></param>
-  /// <typeparam name="T"></typeparam>
-  /// <returns></returns>
+  /// <param name="value">
+  /// When this method returns, contains the value associated with the specified
+  /// type, if the type is found; otherwise, the default value for the type of
+  /// the value parameter. This parameter is passed uninitialized.
+  /// </param>
+  /// <typeparam name="T">The type of the value to get</typeparam>
+  /// <returns>true if the <see cref="IAutoCache"/> contains an element with the
+  /// specified type; otherwise, false.</returns>
   bool TryGetValue<T>([MaybeNullWhen(false)] out T value);
 }
 
@@ -147,6 +157,8 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   }
 
   /// <inheritdoc />
+  /// <returns>true if the <see cref="AutoCache"/> contains an element with the
+  /// specified type; otherwise, false.</returns>
   public bool TryGetValue<T>([MaybeNullWhen(false)] out T value) {
     value = default;
     if (_valueDict.TryGetValue(typeof(T), out var val) &&

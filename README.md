@@ -266,6 +266,39 @@ autoMap.Remove("Pickles");
 autoMap["Brisket"] = new Cat("Brisket");
 ```
 
+## 🗺️ AutoCache
+
+`AutoCache` is a cache which stores values separated by type. On update, it broadcasts to all subscribers and stores the value based on the type given. 
+You can then use the method `TryGetValue<T>(out T value)` to get the last value updated of type `T`.
+
+> [!NOTE]
+> While AutoCache does support reference types, consider using value types instead when initializing new instances on update. 
+
+```csharp
+readonly record struct UpdateName(string DogName);
+
+var autoCache = new AutoCache();
+using var binding = autoCache.Bind();
+
+binding
+  .OnUpdate(
+    (dogName) => Console.WriteLine($"Name Updated: {dogName}")
+  )
+
+autoCache.Update(new UpdateName("Pickles"));
+autoCache.Update(new UpdateName("Cookie"));
+autoCache.Update(new UpdateName("Brisket"));
+autoCache.Update(new UpdateName("Sven"));
+
+// After each udpate, the OnUpdate callback will be called.
+
+if(autoCache.TryGetValue<UpdateName>(out var update))
+{ 
+  // This would print out "Last received dog name: Sven"
+  Console.WriteLine($"Last received dog name: {update.DogName}"
+}
+```
+
 ## 🧰 Build Your Own Reactive Primitives
 
 Sync primitives are all built on top of a `SyncSubject`. A `SyncSubject` is an object which your own reactive primitive will own and use to notify `SyncBinding`s of changes in your reactive primitive.
