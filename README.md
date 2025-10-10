@@ -266,7 +266,7 @@ autoMap.Remove("Pickles");
 autoMap["Brisket"] = new Cat("Brisket");
 ```
 
-## 🗺️ AutoCache
+## 💰 AutoCache
 
 `AutoCache` is a cache which stores values separated by type. On update, it broadcasts to all subscribers and stores the value based on the type given. 
 You can then use the method `TryGetValue<T>(out T value)` to get the last value updated of type `T`.
