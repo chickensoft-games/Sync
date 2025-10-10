@@ -2,12 +2,30 @@ namespace Chickensoft.Sync.Primitives;
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using Collections;
 using Sync;
 
-internal static class Cache<T> where T : struct {
-  public static T Value { get; set; }
+internal abstract class CachedValue {
+  public abstract void Clear();
+}
+
+internal class CachedValue<T> : CachedValue {
+  private T? _value;
+
+  public T? Value {
+    get => _value;
+    set {
+      _value = value;
+      HasValue = true;
+    }
+  }
+
+  public bool HasValue { get; private set; }
+
+  public override void Clear() {
+    Value = default;
+    HasValue = false;
+  }
 }
 
 /// <summary>
@@ -15,20 +33,12 @@ internal static class Cache<T> where T : struct {
 /// </summary>
 public interface IAutoCache : IAutoObject<AutoCache.Binding> {
   /// <summary>
-  /// Attempts to get the last value which was pushed to the cache of a specific value type.
+  /// Attempts to get the last value which was pushed to the cache of a specific reference or value type.
   /// </summary>
   /// <param name="value"></param>
   /// <typeparam name="T"></typeparam>
   /// <returns></returns>
-  bool TryGetValue<T>(out T? value) where T : struct;
-
-  /// <summary>
-  /// Attempts to get the last value which was pushed to the cache of a specific reference type.
-  /// </summary>
-  /// <param name="value"></param>
-  /// <typeparam name="T"></typeparam>
-  /// <returns></returns>
-  bool TryGetValue<T>(out T value) where T : class;
+  bool TryGetValue<T>(out T? value);
 }
 
 /// <summary>
@@ -95,7 +105,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   private readonly SyncSubject _subject;
   private readonly Passthrough _passthrough;
   private readonly BoxlessQueue _boxlessQueue;
-  private readonly HashSet<Type> _valueSet;
+  private readonly Dictionary<Type, CachedValue> _valueDict;
   private readonly Dictionary<Type, object> _refDict;
 
   /// <summary>
@@ -110,7 +120,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     _subject = new SyncSubject(this);
     _passthrough = new Passthrough(this);
     _boxlessQueue = new BoxlessQueue();
-    _valueSet = [];
+    _valueDict = [];
     _refDict = [];
   }
 
@@ -124,18 +134,13 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   public void Dispose() => _subject.Dispose();
 
   /// <inheritdoc />
-  public bool TryGetValue<T>(out T? value) where T : struct {
+  public bool TryGetValue<T>(out T? value) {
     value = default;
-    if (_valueSet.Contains(typeof(T))) {
-      value = Cache<T>.Value;
-      return true;
+    if (_valueDict.TryGetValue(typeof(T), out var val) &&
+        val is CachedValue<T> { HasValue: true } derivedValue) {
+      value = derivedValue.Value;
+	    return true;
     }
-    return false;
-  }
-
-  /// <inheritdoc />
-  public bool TryGetValue<T>([MaybeNullWhen(false)] out T value) where T : class {
-    value = null;
     if (_refDict.TryGetValue(typeof(T), out var refVal) &&
         refVal is T derivedRef) {
       value = derivedRef;
@@ -150,8 +155,15 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   /// <param name="value"></param>
   /// <typeparam name="T"></typeparam>
   public void Push<T>(in T value) where T : struct {
-    _valueSet.Add(typeof(T));
-    Cache<T>.Value = value;
+    if (_valueDict.TryGetValue(typeof(T), out var cachedValue)) {
+      var cachedValueCast = (CachedValue<T>)cachedValue;
+      cachedValueCast.Value = value;
+    }
+    else {
+      var newCachedValue = new CachedValue<T>();
+      _valueDict[typeof(T)] = newCachedValue;
+      newCachedValue.Value = value;
+    }
     _boxlessQueue.Enqueue(value);
     _subject.Perform(new PopOp());
   }
@@ -179,14 +191,16 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   /// <summary>
   /// The combined count of all reference types and value types stored in the cache.
   /// </summary>
-  public int Count => _refDict.Count + _valueSet.Count;
+  public int Count => _refDict.Count + _valueDict.Count;
 
   /// <summary>
   /// Clears the cache of any stored values.
   /// </summary>
   public void Clear() {
     _refDict.Clear();
-    _valueSet.Clear();
+    foreach (var (_, value) in _valueDict) {
+      value.Clear();
+    }
   }
 
   private readonly struct Passthrough : IBoxlessValueHandler {

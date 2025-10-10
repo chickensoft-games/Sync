@@ -130,7 +130,7 @@ public sealed class AutoCacheTest {
     cache.Push(new TestValue(3));
 
     cache.TryGetValue<TestValue>(out var value).ShouldBeTrue();
-    value?.Value.ShouldBe(3);
+    value.Value.ShouldBe(3);
   }
 
   [Fact]
