@@ -30,21 +30,22 @@ internal class CachedValue<T> : CachedValue {
 }
 
 /// <summary>
-/// A cache that broadcasts the last value pushed to it to all subscribers.
+/// A cache which stores values separated by type. On update, it broadcasts to
+/// all subscribers and stores the value based on the type given. This cache
+/// supports both reference types and value types.
 /// </summary>
 public interface IAutoCache : IAutoObject<AutoCache.Binding> {
   /// <summary>
-  /// Attempts to get the last value which was pushed to the cache of a specific reference or value type.
+  /// Attempts to get the last value which was pushed to the cache of a specific
+  /// reference or value type.
   /// </summary>
   /// <param name="value"></param>
   /// <typeparam name="T"></typeparam>
   /// <returns></returns>
-  bool TryGetValue<T>(out T value);
+  bool TryGetValue<T>([MaybeNullWhen(false)] out T value);
 }
 
-/// <summary>
-/// A cache that broadcasts the last value pushed to it to all subscribers.
-/// </summary>
+/// <inheritdoc cref="IAutoCache"/>
 public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   // Atomic operations
   private readonly record struct PopOp;
@@ -59,12 +60,15 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     internal Binding(ISyncSubject subject) : base(subject) { }
 
     /// <summary>
-    /// Registers a callback that is invoked whenever a value is pushed of a specific value type
+    /// Registers a callback that is invoked whenever a value is pushed of a
+    /// specific value type
     /// </summary>
     /// <param name="callback">Callback to invoke.</param>
     /// <param name="condition">Optional condition that must be true for the
     /// callback to be invoked.</param>
+    /// <typeparam name="T">Value Type to Listen For</typeparam>
     /// <returns>This binding (for chaining).</returns>
+    /// <seealso cref="OnUpdate{T}(Action{T}, Func{T, bool}?)"/>
     public Binding OnUpdate<T>(
       Callback<T> callback, Func<T, bool>? condition = null) where T : struct
     {
@@ -79,12 +83,15 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     }
 
     /// <summary>
-    /// Registers a callback that is invoked whenever a value is pushed of a specific reference type
+    /// Registers a callback that is invoked whenever a value is pushed of a
+    /// specific reference type
     /// </summary>
     /// <param name="callback">Callback to invoke.</param>
     /// <param name="condition">Optional condition that must be true for the
     /// callback to be invoked.</param>
+    /// <typeparam name="T">Ref Type to Listen For</typeparam>
     /// <returns>This binding (for chaining).</returns>
+    /// <seealso cref="OnUpdate{T}(Callback{T}, Func{T, bool}?)"/>
     public Binding OnUpdate<T>(
       Action<T> callback, Func<T, bool>? condition = null) where T : class
     {
@@ -115,7 +122,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   /// Creates a new auto cache.
   /// </para>
   /// <para>
-  /// A cache that broadcasts the last value pushed to it to all subscribers.
+  /// <inheritdoc cref="AutoCache"/>
   /// </para>
   /// </summary>
   public AutoCache() {
@@ -154,12 +161,25 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     }
     return false;
   }
-
   /// <summary>
-  /// Pushes a new value type onto the cache and broadcasts it to all subscribers.
+  /// <para>
+  /// Updates the cache for a given value type and broadcasts it to all
+  /// subscribers.
+  /// </para>
+  /// <para>
+  /// To update the cache for a particular base reference type, use the generic
+  /// parameter of the type you want to update.
+  /// </para>
+  /// <para>
+  /// I.e., Update&lt;BaseType&gt;(new DerivedType())
+  /// </para>
   /// </summary>
-  /// <param name="value"></param>
-  /// <typeparam name="T"></typeparam>
+  /// <remarks>
+  /// Always remember that pushing a struct as an interface or object will box the value
+  /// </remarks>
+  /// <seealso cref="Update{T}(T)"/>
+  /// <param name="value">Value to update with</param>
+  /// <typeparam name="T">Value Type</typeparam>
   public void Update<T>(in T value) where T : struct {
     if (_valueDict.TryGetValue(typeof(T), out var cachedValue)) {
       var cachedValueCast = (CachedValue<T>)cachedValue;
@@ -179,10 +199,24 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   }
 
   /// <summary>
-  /// Pushes a new reference type onto the cache and broadcasts it to all subscribers.
+  /// <para>
+  /// Updates the cache for a given reference type and broadcasts it to all
+  /// subscribers.
+  /// </para>
+  /// <para>
+  /// To update the cache for a particular base reference type, use the generic
+  /// parameter of the type you want to update.
+  /// </para>
+  /// <para>
+  /// I.e., Update&lt;BaseType&gt;(new DerivedType())
+  /// </para>
+  /// <remarks>
+  /// Always remember that pushing a struct as an interface or object will box the value
+  /// </remarks>
   /// </summary>
-  /// <param name="value"></param>
-  /// <typeparam name="T"></typeparam>
+  /// <seealso cref="Update{T}(in T)"/>
+  /// <param name="value">Value to update with</param>
+  /// <typeparam name="T">Reference Type</typeparam>
   public void Update<T>(T value) where T : class {
     _refDict[typeof(T)] = value;
     _boxlessQueue.Enqueue(new RefValue(value));
