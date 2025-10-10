@@ -132,7 +132,11 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   public void ClearBindings() => _subject.ClearBindings();
 
   /// <inheritdoc />
-  public void Dispose() => _subject.Dispose();
+  public void Dispose() {
+    _subject.Dispose();
+    _refDict.Clear();
+    _valueDict.Clear();
+  }
 
   /// <inheritdoc />
   public bool TryGetValue<T>([MaybeNullWhen(false)] out T value) {
@@ -155,7 +159,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   /// </summary>
   /// <param name="value"></param>
   /// <typeparam name="T"></typeparam>
-  public void Push<T>(in T value) where T : struct {
+  public void Update<T>(in T value) where T : struct {
     if (_valueDict.TryGetValue(typeof(T), out var cachedValue)) {
       var cachedValueCast = (CachedValue<T>)cachedValue;
       cachedValueCast.Value = value;
@@ -174,7 +178,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   /// </summary>
   /// <param name="value"></param>
   /// <typeparam name="T"></typeparam>
-  public void Push<T>(T value) where T : class {
+  public void Update<T>(T value) where T : class {
     _refDict[typeof(T)] = value;
     _boxlessQueue.Enqueue(new RefValue(value));
     _subject.Perform(new PopOp());

@@ -25,9 +25,9 @@ public sealed class AutoCacheTest {
       .OnValue((in double v) => values.Add(v))
       .OnValue((string v) => values.Add(v));
 
-    cache.Push(5);
-    cache.Push(3.14);
-    cache.Push("hello");
+    cache.Update(5);
+    cache.Update(3.14);
+    cache.Update("hello");
 
     cache.TryGetValue<int>(out var integer).ShouldBeTrue();
     cache.TryGetValue<double>(out var dec).ShouldBeTrue();
@@ -63,25 +63,25 @@ public sealed class AutoCacheTest {
         condition: (cat) => cat.Name.StartsWith('S')
       );
 
-    autoCache.Push(boots);
+    autoCache.Update(boots);
 
     log.ShouldBe(["animal Boots", "dog Boots"]);
     log.Clear();
 
-    autoCache.Push(cookie);
+    autoCache.Update(cookie);
 
     log.ShouldBe(["animal Cookie", "dog Cookie", "poodle Cookie"]);
     log.Clear();
 
-    autoCache.Push(brisket);
+    autoCache.Update(brisket);
     log.ShouldBe(["animal Brisket", "dog Brisket", "poodle Brisket"]);
     log.Clear();
 
-    autoCache.Push(sven);
+    autoCache.Update(sven);
     log.ShouldBe(["animal Sven", "cat Sven", "cat with S name Sven"]);
     log.Clear();
 
-    autoCache.Push(new Dinosaur("Rex"));
+    autoCache.Update(new Dinosaur("Rex"));
     log.ShouldBe(["animal Rex", "animal with R name Rex"]);
   }
 
@@ -91,7 +91,7 @@ public sealed class AutoCacheTest {
 
     var autoCache = new AutoCache();
 
-    autoCache.Push(boots);
+    autoCache.Update(boots);
 
     autoCache.TryGetValue<Dog>(out var dog).ShouldBeTrue();
     dog.ShouldBe(boots);
@@ -110,11 +110,11 @@ public sealed class AutoCacheTest {
 
     var autoCache = new AutoCache();
 
-    autoCache.Push(boots);
+    autoCache.Update(boots);
     autoCache.TryGetValue<Dog>(out var dog).ShouldBeTrue();
     dog.ShouldBe(boots);
 
-    autoCache.Push<Animal>(boots);
+    autoCache.Update<Animal>(boots);
     autoCache.TryGetValue<Animal>(out var animal).ShouldBeTrue();
     animal.ShouldBe(boots);
 
@@ -125,9 +125,9 @@ public sealed class AutoCacheTest {
   public void TryGetValueReturnsLatestValue() {
     var cache = new AutoCache();
 
-    cache.Push(new TestValue(5));
-    cache.Push(new TestValue(10));
-    cache.Push(new TestValue(3));
+    cache.Update(new TestValue(5));
+    cache.Update(new TestValue(10));
+    cache.Update(new TestValue(3));
 
     cache.TryGetValue<TestValue>(out var value).ShouldBeTrue();
     value.Value.ShouldBe(3);
@@ -137,9 +137,9 @@ public sealed class AutoCacheTest {
   public void TryGetValueReturnsLatestRef() {
     var cache = new AutoCache();
 
-    cache.Push(new TestRef(3));
-    cache.Push(new TestRef(10));
-    cache.Push(new TestRef(5));
+    cache.Update(new TestRef(3));
+    cache.Update(new TestRef(10));
+    cache.Update(new TestRef(5));
 
     cache.TryGetValue<TestRef>(out var value).ShouldBeTrue();
     value.ShouldNotBeNull();
@@ -154,8 +154,8 @@ public sealed class AutoCacheTest {
     using var binding = autoCache.Bind();
     binding.OnValue((in int v) => values.Add(v));
 
-    autoCache.Push(1);
-    autoCache.Push(2);
+    autoCache.Update(1);
+    autoCache.Update(2);
 
     autoCache.TryGetValue<int>(out var value).ShouldBeTrue();
     value.ShouldBe(2);
@@ -164,7 +164,7 @@ public sealed class AutoCacheTest {
     values.Clear();
 
     autoCache.ClearBindings();
-    autoCache.Push(3);
+    autoCache.Update(3);
     values.ShouldBeEmpty();
   }
 
@@ -174,6 +174,6 @@ public sealed class AutoCacheTest {
 
     cache.Dispose();
 
-    Should.Throw<ObjectDisposedException>(() => cache.Push(2));
+    Should.Throw<ObjectDisposedException>(() => cache.Update(2));
   }
 }
