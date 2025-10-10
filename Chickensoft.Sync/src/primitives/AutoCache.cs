@@ -1,10 +1,9 @@
-namespace Utopia;
+namespace Chickensoft.Sync.Primitives;
 
 using System;
 using System.Collections.Generic;
-using Chickensoft.Collections;
-using Chickensoft.Sync;
-using Chickensoft.Sync.Primitives;
+using Collections;
+using Sync;
 
 /// <summary>
 /// A cache that broadcasts the last value pushed to it to all subscribers.

@@ -1,7 +1,7 @@
 namespace Chickensoft.Sync.Tests.Primitives;
 
 using Shouldly;
-using Utopia;
+using Sync.Primitives;
 
 public sealed class AutoCacheTest {
   private readonly record struct TestValue(int Value);
