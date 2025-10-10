@@ -21,9 +21,9 @@ public sealed class AutoCacheTest {
     var values = new List<object>();
 
     cache.Bind()
-      .OnValue((in int v) => values.Add(v))
-      .OnValue((in double v) => values.Add(v))
-      .OnValue((string v) => values.Add(v));
+      .OnUpdate((in int v) => values.Add(v))
+      .OnUpdate((in double v) => values.Add(v))
+      .OnUpdate((string v) => values.Add(v));
 
     cache.Update(5);
     cache.Update(3.14);
@@ -51,14 +51,14 @@ public sealed class AutoCacheTest {
     var log = new List<string>();
 
     using var binding = autoCache.Bind()
-      .OnValue<Animal>(animal => log.Add($"animal {animal.Name}"))
-      .OnValue<Animal>(
+      .OnUpdate<Animal>(animal => log.Add($"animal {animal.Name}"))
+      .OnUpdate<Animal>(
         animal => log.Add($"animal with R name {animal.Name}"),
         condition: (animal) => animal.Name.StartsWith('R'))
-      .OnValue<Dog>(dog => log.Add($"dog {dog.Name}"))
-      .OnValue<Poodle>((poodle) => log.Add($"poodle {poodle.Name}"))
-      .OnValue<Cat>(cat => log.Add($"cat {cat.Name}"))
-      .OnValue<Cat>(
+      .OnUpdate<Dog>(dog => log.Add($"dog {dog.Name}"))
+      .OnUpdate<Poodle>((poodle) => log.Add($"poodle {poodle.Name}"))
+      .OnUpdate<Cat>(cat => log.Add($"cat {cat.Name}"))
+      .OnUpdate<Cat>(
         cat => log.Add($"cat with S name {cat.Name}"),
         condition: (cat) => cat.Name.StartsWith('S')
       );
@@ -152,7 +152,7 @@ public sealed class AutoCacheTest {
     var values = new List<object>();
 
     using var binding = autoCache.Bind();
-    binding.OnValue((in int v) => values.Add(v));
+    binding.OnUpdate((in int v) => values.Add(v));
 
     autoCache.Update(1);
     autoCache.Update(2);

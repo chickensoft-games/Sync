@@ -65,7 +65,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     /// <param name="condition">Optional condition that must be true for the
     /// callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnValue<T>(
+    public Binding OnUpdate<T>(
       Callback<T> callback, Func<T, bool>? condition = null) where T : struct
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
@@ -85,7 +85,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     /// <param name="condition">Optional condition that must be true for the
     /// callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnValue<T>(
+    public Binding OnUpdate<T>(
       Action<T> callback, Func<T, bool>? condition = null) where T : class
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
