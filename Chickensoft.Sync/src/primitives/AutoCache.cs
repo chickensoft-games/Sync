@@ -2,6 +2,7 @@ namespace Chickensoft.Sync.Primitives;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Collections;
 using Sync;
 
@@ -38,7 +39,7 @@ public interface IAutoCache : IAutoObject<AutoCache.Binding> {
   /// <param name="value"></param>
   /// <typeparam name="T"></typeparam>
   /// <returns></returns>
-  bool TryGetValue<T>(out T? value);
+  bool TryGetValue<T>(out T value);
 }
 
 /// <summary>
@@ -134,11 +135,11 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   public void Dispose() => _subject.Dispose();
 
   /// <inheritdoc />
-  public bool TryGetValue<T>(out T? value) {
+  public bool TryGetValue<T>([MaybeNullWhen(false)] out T value) {
     value = default;
     if (_valueDict.TryGetValue(typeof(T), out var val) &&
         val is CachedValue<T> { HasValue: true } derivedValue) {
-      value = derivedValue.Value;
+      value = derivedValue.Value!;
 	    return true;
     }
     if (_refDict.TryGetValue(typeof(T), out var refVal) &&
