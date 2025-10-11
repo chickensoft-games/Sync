@@ -3,6 +3,7 @@ namespace Chickensoft.Sync.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Collections;
 using Sync;
 
@@ -34,7 +35,7 @@ internal class CachedValue<T> : CachedValue {
 /// A cache which stores values separated by type.
 /// </para>
 /// <para>
-/// On update, it broadcasts to all subscribers and stores the value based on
+/// On update, it broadcasts to all bindings and stores the value based on
 /// the type given. You can then use the method <see cref="TryGetValue{T}(out T)"/>
 /// to get the last value updated of type `T`
 /// </para>
@@ -52,7 +53,7 @@ public interface IAutoCache : IAutoObject<AutoCache.Binding> {
   /// <typeparam name="T">The type of the value to get</typeparam>
   /// <returns>true if the <see cref="IAutoCache"/> contains an element with the
   /// specified type; otherwise, false.</returns>
-  bool TryGetValue<T>([MaybeNullWhen(false)] out T value);
+  bool TryGetValue<T>([MaybeNullWhen(false)] out T value) where T : notnull;
 }
 
 /// <inheritdoc cref="IAutoCache"/>
@@ -109,9 +110,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
 
       AddCallback(
         (in RefValue value) => {
-          if (value.Value is T tValue) {
-            callback(tValue);
-          }
+            callback(Unsafe.As<T>(value.Value));
         },
         (in RefValue value) => value.Value is T tValue && predicate(tValue)
       );
@@ -159,7 +158,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   /// <inheritdoc />
   /// <returns>true if the <see cref="AutoCache"/> contains an element with the
   /// specified type; otherwise, false.</returns>
-  public bool TryGetValue<T>([MaybeNullWhen(false)] out T value) {
+  public bool TryGetValue<T>([MaybeNullWhen(false)] out T value) where T : notnull {
     value = default;
     if (_valueDict.TryGetValue(typeof(T), out var val) &&
         val is CachedValue<T> { HasValue: true } derivedValue) {
