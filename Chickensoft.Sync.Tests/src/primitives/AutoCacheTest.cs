@@ -170,6 +170,24 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
+  public void ClearBroadcasts() {
+    var autoCache = new AutoCache();
+
+    autoCache.Update(1);
+    autoCache.Update(new TestRef(3));
+
+    var log = new List<string>();
+    using var binding = autoCache.Bind();
+
+    binding.OnClear(() => log.Add("clear"));
+
+    autoCache.Clear();
+
+    autoCache.Count.ShouldBe(0);
+    log.ShouldBe(["clear"]);
+  }
+
+  [Fact]
   public void ClearSetsCountToZero() {
     var autoCache = new AutoCache();
     var boots = new Dog("Boots");

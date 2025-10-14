@@ -66,6 +66,7 @@ public sealed class AutoCache : IAutoCache,
 
   // Broadcasts
   private readonly record struct RefValue(object Value);
+  private readonly record struct ClearBroadcast;
 
   /// <summary>
   /// A binding to an <see cref="AutoCache"/>.
@@ -115,6 +116,17 @@ public sealed class AutoCache : IAutoCache,
         (in RefValue value) => callback(Unsafe.As<T>(value.Value)),
         (in RefValue value) => value.Value is T tValue && predicate(tValue)
       );
+
+      return this;
+    }
+
+    /// <summary>
+    /// Registers a callback to be invoked when the cache is cleared.
+    /// </summary>
+    /// <param name="callback">Callback to be invoked.</param>
+    /// <returns>This binding (for chaining).</returns>
+    public Binding OnClear(Action callback) {
+      AddCallback((in ClearBroadcast b) => callback());
 
       return this;
     }
@@ -244,11 +256,15 @@ public sealed class AutoCache : IAutoCache,
   }
 
   void IPerform<ClearOp>.Perform(in ClearOp op) {
+    if (Count == 0) { return; }
+
     _refDict.Clear();
     foreach (var (_, value) in _valueDict) {
       value.Clear();
     }
     _cacheCount = 0;
+
+    _subject.Broadcast(new ClearBroadcast());
   }
 
 
@@ -260,9 +276,7 @@ public sealed class AutoCache : IAutoCache,
   /// <summary>
   /// Clears the cache of any stored values.
   /// </summary>
-  public void Clear() {
-    _subject.Perform(new ClearOp());
-  }
+  public void Clear() => _subject.Perform(new ClearOp());
 
   private readonly struct Passthrough : IBoxlessValueHandler {
     public readonly AutoCache Cache { get; }
