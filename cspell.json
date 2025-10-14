@@ -69,6 +69,7 @@
     "typeparamref",
     "ulong",
     "Unparented",
-    "Xunit"
+    "Xunit",
+    "Hamtaro"
   ]
 }
