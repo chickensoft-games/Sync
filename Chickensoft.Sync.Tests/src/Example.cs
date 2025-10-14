@@ -140,7 +140,7 @@ public class AutoSetExample {
       .OnRemove((Cat cat) => Console.WriteLine($"Cat removed: {cat.Name}"))
       .OnClear(() => Console.WriteLine("Set cleared"));
 
-    autoSet.Add(new Dog("Chibi"));
+    autoSet.Add(new Dog("Cookie"));
     autoSet.Remove(new Cat("Pickles"));
   }
 }

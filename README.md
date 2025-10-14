@@ -266,6 +266,60 @@ autoMap.Remove("Pickles");
 autoMap["Brisket"] = new Cat("Brisket");
 ```
 
+## 💰 AutoCache
+
+`AutoCache` is a cache which stores values separated by type. On update, it broadcasts to all bindings and stores the 
+value based on the type given. This can then be retrieved by using the `TryGetValue<T>(out T value)` to get the last value 
+updated of type `T`. Since AutoCache doesn't have a generic param, it is especially useful as a message channel, or a lookup-cache 
+for multiple types of data. We've optimized AutoCache for value types so that it does not box value types on updates. 
+You might find this pattern familiar if you've used Chickensoft.LogicBlocks.
+
+> [!CAUTION]
+> When pushing a value of type `Dog` which derives from Animal, TryGetValue<Animal> will not return the last value updated of type `Dog`.
+> If you desire to get the last Animal value updated, you will have to use Update<Animal>(new Dog()) instead.
+> Although Binding notifications for OnUpdate<Dog> or OnUpdate<Animal> will still be called regardless of the type pushed.
+
+> [!NOTE]
+> While AutoCache does support reference types, consider using value types instead when initializing new instances on update to avoid allocating unnecessary memory that would need to be immediately collected by the garbage collector. Using value types where possible helps avoid stuttering and hitches by reducing the amount of work that the garbage collector needs to do to clean up reference types on the heap.
+
+```csharp
+readonly record struct UpdateName(string DogName);
+
+var autoCache = new AutoCache();
+using var binding = autoCache.Bind();
+
+binding
+  .OnUpdate<UpdateName>(
+    (name) => Console.WriteLine($"Name Updated: {name}")
+  )
+
+autoCache.Update(new UpdateName("Pickles"));
+autoCache.Update(new UpdateName("Sven"));
+// After each update, the OnUpdate callback will be called.
+
+if(autoCache.TryGetValue<UpdateName>(out var update))
+{ 
+  // This would print out "Last received dog name: Sven"
+  Console.WriteLine($"Last received dog name: {update.DogName}"
+}
+
+binding
+  .OnUpdate<Animal>(
+    (animal) => Console.WriteLine($"Animal Updated: {animal.Name}")
+  );
+
+// Store and broadcast a Mouse by its less-specific supertype, Animal
+autoCache.Update<Animal>(new Mouse("Hamtaro"));
+autoCache.Update(new Dog("Cookie"));
+autoCache.Update(new Cat("Pickles"));
+// OnUpdate<Animal> will be called 3 times.
+
+//See the caution note above for more information
+autoCache.TryGetValue<Animal>(out var animal) // animal will be the Mouse - Hamtaro
+autoCache.TryGetValue<Dog>(out var dog) // animal will be the Dog - Chibi
+autoCache.TryGetValue<Cat>(out var cat) // animal will be the Cat - Pickles
+```
+
 ## 🧰 Build Your Own Reactive Primitives
 
 Sync primitives are all built on top of a `SyncSubject`. A `SyncSubject` is an object which your own reactive primitive will own and use to notify `SyncBinding`s of changes in your reactive primitive.
