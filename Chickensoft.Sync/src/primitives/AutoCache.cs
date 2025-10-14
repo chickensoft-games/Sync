@@ -57,9 +57,12 @@ public interface IAutoCache : IAutoObject<AutoCache.Binding> {
 }
 
 /// <inheritdoc cref="IAutoCache"/>
-public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
+public sealed class AutoCache : IAutoCache,
+  IPerform<AutoCache.PopOp>,
+  IPerform<AutoCache.ClearOp> {
   // Atomic operations
   private readonly record struct PopOp;
+  private readonly record struct ClearOp;
 
   // Broadcasts
   private readonly record struct RefValue(object Value);
@@ -109,9 +112,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
 
       AddCallback(
-        (in RefValue value) => {
-            callback(Unsafe.As<T>(value.Value));
-        },
+        (in RefValue value) => callback(Unsafe.As<T>(value.Value)),
         (in RefValue value) => value.Value is T tValue && predicate(tValue)
       );
 
@@ -242,6 +243,14 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
     _boxlessQueue.Dequeue(_passthrough);
   }
 
+  void IPerform<ClearOp>.Perform(in ClearOp op) {
+    _refDict.Clear();
+    foreach (var (_, value) in _valueDict) {
+      value.Clear();
+    }
+    _cacheCount = 0;
+  }
+
 
   /// <summary>
   /// The combined count of all reference types and value types stored in the cache.
@@ -252,11 +261,7 @@ public sealed class AutoCache : IAutoCache, IPerform<AutoCache.PopOp> {
   /// Clears the cache of any stored values.
   /// </summary>
   public void Clear() {
-    _refDict.Clear();
-    foreach (var (_, value) in _valueDict) {
-      value.Clear();
-    }
-    _cacheCount = 0;
+    _subject.Perform(new ClearOp());
   }
 
   private readonly struct Passthrough : IBoxlessValueHandler {

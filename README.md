@@ -280,7 +280,7 @@ You might find this pattern familiar if you've used Chickensoft.LogicBlocks.
 > Although Binding notifications for OnUpdate<Dog> or OnUpdate<Animal> will still be called regardless of the type pushed.
 
 > [!NOTE]
-> While AutoCache does support reference types, consider using value types instead when initializing new instances on update. 
+> While AutoCache does support reference types, consider using value types instead when initializing new instances on update to avoid allocating unnecessary memory that would need to be immediately collected by the garbage collector. Using value types where possible helps avoid stuttering and hitches by reducing the amount of work that the garbage collector needs to do to clean up reference types on the heap.
 
 ```csharp
 readonly record struct UpdateName(string DogName);
@@ -308,8 +308,9 @@ binding
     (animal) => Console.WriteLine($"Animal Updated: {animal.Name}")
   );
 
+// Store and broadcast a Mouse by its less-specific supertype, Animal
 autoCache.Update<Animal>(new Mouse("Hamtaro"));
-autoCache.Update(new Dog("Chibi"));
+autoCache.Update(new Dog("Cookie"));
 autoCache.Update(new Cat("Pickles"));
 // OnUpdate<Animal> will be called 3 times.
 
