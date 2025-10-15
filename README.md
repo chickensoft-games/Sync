@@ -268,19 +268,19 @@ autoMap["Brisket"] = new Cat("Brisket");
 
 ## 💰 AutoCache
 
-`AutoCache` is a cache which stores values separated by type. On update, it broadcasts to all bindings and stores the 
-value based on the type given. This can then be retrieved by using the `TryGetValue<T>(out T value)` to get the last value 
-updated of type `T`. Since AutoCache doesn't have a generic param, it is especially useful as a message channel, or a lookup-cache 
-for multiple types of data. We've optimized AutoCache for value types so that it does not box value types on updates. 
-You might find this pattern familiar if you've used Chickensoft.LogicBlocks.
+`AutoCache` is a cache which stores values separated by type. On update, it broadcasts to all bindings and stores the
+value based on the type given. This can then be retrieved by using the `TryGetValue<T>(out T value)` to get the last value
+updated of type `T`. Since `AutoCache` doesn't have a generic param, it is especially useful as a message channel, or a lookup-cache
+for multiple types of data. We've optimized `AutoCache` for value types so that it does not box value types on updates.
+You might find this pattern familiar if you've used `Chickensoft.LogicBlocks`.
 
 > [!CAUTION]
-> When pushing a value of type `Dog` which derives from Animal, TryGetValue<Animal> will not return the last value updated of type `Dog`.
-> If you desire to get the last Animal value updated, you will have to use Update<Animal>(new Dog()) instead.
-> Although Binding notifications for OnUpdate<Dog> or OnUpdate<Animal> will still be called regardless of the type pushed.
+> When pushing a value of type `Dog` which derives from `Animal`, `TryGetValue<Animal>()` will not return the last value
+> updated of type `Dog`. If you desire to get the last `Animal` value updated, you will have to use `Update<Animal>(new Dog())`
+> instead. Although Binding notifications for `OnUpdate<Dog>` or `OnUpdate<Animal>` will still be called regardless of the type pushed.
 
 > [!NOTE]
-> While AutoCache does support reference types, consider using value types instead when initializing new instances on update to avoid allocating unnecessary memory that would need to be immediately collected by the garbage collector. Using value types where possible helps avoid stuttering and hitches by reducing the amount of work that the garbage collector needs to do to clean up reference types on the heap.
+> While `AutoCache` does support reference types, consider using value types instead when initializing new instances on update.
 
 ```csharp
 readonly record struct UpdateName(string DogName);
