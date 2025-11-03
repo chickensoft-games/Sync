@@ -263,7 +263,7 @@ binding
 
 autoMap["Chibi"] = new Dog("Chibi");
 autoMap.Remove("Pickles");
-autoMap["Brisket"] = new Cat("Brisket");
+autoMap["Brisket"] = new Poodle("Brisket");
 ```
 
 ## 💰 AutoCache
@@ -313,13 +313,13 @@ binding
 
 // Store and broadcast a Mouse by its less-specific supertype, Animal
 autoCache.Update<Animal>(new Mouse("Hamtaro"));
-autoCache.Update(new Dog("Chibi"));
+autoCache.Update(new Dog("Cookie"));
 autoCache.Update(new Cat("Pickles"));
 // OnUpdate<Animal> will be called 3 times.
 
 //See the caution note above for more information
 autoCache.TryGetValue<Animal>(out var animal) // animal will be the Mouse - Hamtaro
-autoCache.TryGetValue<Dog>(out var dog) // animal will be the Dog - Chibi
+autoCache.TryGetValue<Dog>(out var dog) // animal will be the Dog - Cookie
 autoCache.TryGetValue<Cat>(out var cat) // animal will be the Cat - Pickles
 ```
 
