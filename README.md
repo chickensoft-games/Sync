@@ -280,9 +280,9 @@ You might find this pattern familiar if you've used `Chickensoft.LogicBlocks`.
 > instead. Although Binding notifications for `OnUpdate<Dog>` or `OnUpdate<Animal>` will still be called regardless of the type pushed.
 
 > [!NOTE]
-> While `AutoCache` does support reference types, consider using value types instead when initializing new instances on 
-> update to avoid allocating unnecessary memory that would need to be immediately collected by the garbage collector. 
-> Using value types where possible helps avoid stuttering and hitches by reducing the amount of work that the garbage 
+> While `AutoCache` does support reference types, consider using value types instead when initializing new instances on
+> update to avoid allocating unnecessary memory that would need to be immediately collected by the garbage collector.
+> Using value types where possible helps avoid stuttering and hitches by reducing the amount of work that the garbage
 > collector needs to do to clean up reference types on the heap.
 
 ```csharp
@@ -301,7 +301,7 @@ autoCache.Update(new UpdateName("Sven"));
 // After each update, the OnUpdate callback will be called.
 
 if(autoCache.TryGetValue<UpdateName>(out var update))
-{ 
+{
   // This would print out "Last received dog name: Sven"
   Console.WriteLine($"Last received dog name: {update.DogName}"
 }
@@ -313,7 +313,7 @@ binding
 
 // Store and broadcast a Mouse by its less-specific supertype, Animal
 autoCache.Update<Animal>(new Mouse("Hamtaro"));
-autoCache.Update(new Dog("Cookie"));
+autoCache.Update(new Dog("Chibi"));
 autoCache.Update(new Cat("Pickles"));
 // OnUpdate<Animal> will be called 3 times.
 
@@ -364,7 +364,7 @@ public sealed class AutoValue<T> : IAutoValue<T> {
     // Atomic operations
   private readonly record struct UpdateOp(T Value);
 
-  // ... binding class 
+  // ... binding class
 
   private T _value;
   private readonly SyncSubject _subject;
@@ -402,7 +402,7 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   // Broadcasts
   public readonly record struct UpdateBroadcast(T Value);
 
-  // ... binding class 
+  // ... binding class
 
   // other members
 
