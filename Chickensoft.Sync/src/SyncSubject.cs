@@ -7,7 +7,8 @@ using Chickensoft.Collections;
 /// <summary>
 /// A synchronous, single-threaded reactive subject.
 /// </summary>
-public interface ISyncSubject : IDisposable {
+public interface ISyncSubject : IDisposable
+{
   /// <summary>
   /// True if this subject has been disposed. Once disposed, no further
   /// operations can be performed on it.
@@ -71,7 +72,8 @@ public interface ISyncSubject : IDisposable {
 /// operations complete when a new one is added.
 /// </para>
 /// </summary>
-public interface IPerform<TOp> where TOp : struct {
+public interface IPerform<TOp> where TOp : struct
+{
   /// <summary>
   /// <para>
   /// Represents a handler for a particular type of atomic operation. Reactive
@@ -113,8 +115,10 @@ public interface IPerform<TOp> where TOp : struct {
 /// processing.
 /// </para>
 /// </summary>
-public sealed class SyncSubject : ISyncSubject {
-  internal enum INTERNAL_OP_TYPE {
+public sealed class SyncSubject : ISyncSubject
+{
+  internal enum INTERNAL_OP_TYPE
+  {
     ADD_BINDING,
     REMOVE_BINDING,
     CLEAR_BINDINGS,
@@ -134,7 +138,7 @@ public sealed class SyncSubject : ISyncSubject {
   private bool _isBusy = false;
   private object? _owner;
   private ObjectDisposedException DisposedException =>
-    new ObjectDisposedException(
+    new(
       nameof(SyncSubject),
       "Cannot perform operation because the object has been disposed."
     );
@@ -165,13 +169,16 @@ public sealed class SyncSubject : ISyncSubject {
   /// receive relevant operation callbacks before bindings are invoked so that
   /// the owner can update its state and invoke any relevant bindings. The owner
   /// is typically the reactive object which created this subject.</param>
-  public SyncSubject(object owner) {
+  public SyncSubject(object owner)
+  {
     _owner = owner;
   }
 
   /// <inheritdoc />
-  public void AddBinding(ISyncBinding binding) {
-    if (_isDisposed) { throw DisposedException; }
+  public void AddBinding(ISyncBinding binding)
+  {
+    if (_isDisposed)
+    { throw DisposedException; }
 
     _internalOps.Enqueue(
       new INTERNAL_OP(INTERNAL_OP_TYPE.ADD_BINDING, Binding: binding)
@@ -181,8 +188,10 @@ public sealed class SyncSubject : ISyncSubject {
   }
 
   /// <inheritdoc />
-  public void RemoveBinding(ISyncBinding binding) {
-    if (_isDisposed) { throw DisposedException; }
+  public void RemoveBinding(ISyncBinding binding)
+  {
+    if (_isDisposed)
+    { throw DisposedException; }
 
     _internalOps.Enqueue(
       new INTERNAL_OP(INTERNAL_OP_TYPE.REMOVE_BINDING, Binding: binding)
@@ -192,8 +201,10 @@ public sealed class SyncSubject : ISyncSubject {
   }
 
   /// <inheritdoc />
-  public void ClearBindings() {
-    if (_isDisposed) { throw DisposedException; }
+  public void ClearBindings()
+  {
+    if (_isDisposed)
+    { throw DisposedException; }
 
     _internalOps.Enqueue(new INTERNAL_OP(INTERNAL_OP_TYPE.CLEAR_BINDINGS));
 
@@ -201,10 +212,13 @@ public sealed class SyncSubject : ISyncSubject {
   }
 
   /// <inheritdoc />
-  public void Perform<TOp>(in TOp op) where TOp : struct {
-    if (_isDisposed) { throw DisposedException; }
+  public void Perform<TOp>(in TOp op) where TOp : struct
+  {
+    if (_isDisposed)
+    { throw DisposedException; }
 
-    if (_isBusy) {
+    if (_isBusy)
+    {
       _ops.Enqueue(in op);
       _internalOps.Enqueue(new INTERNAL_OP(INTERNAL_OP_TYPE.PERFORM));
       Process();
@@ -218,22 +232,29 @@ public sealed class SyncSubject : ISyncSubject {
   }
 
   /// <inheritdoc />
-  public void Clear() {
-    if (_isDisposed) { throw DisposedException; }
+  public void Clear()
+  {
+    if (_isDisposed)
+    { throw DisposedException; }
 
     _ops.Clear();
   }
 
-  private void Process() {
-    if (_isBusy) { return; } // already busy, no re-entry allowed
+  private void Process()
+  {
+    if (_isBusy)
+    { return; } // already busy, no re-entry allowed
 
     _isBusy = true;
 
-    try {
-      while (_internalOps.Count > 0) {
+    try
+    {
+      while (_internalOps.Count > 0)
+      {
         var op = _internalOps.Dequeue();
 
-        switch (op.Operation) {
+        switch (op.Operation)
+        {
           case INTERNAL_OP_TYPE.ADD_BINDING:
             _bindings.Add(op.Binding!);
             break;
@@ -252,7 +273,8 @@ public sealed class SyncSubject : ISyncSubject {
         }
       }
     }
-    finally {
+    finally
+    {
       _isBusy = false;
     }
 
@@ -265,30 +287,36 @@ public sealed class SyncSubject : ISyncSubject {
   // overload for first operation optimization to keep it purely on the stack
   // don't call this if _isBusy is true
   private void Process<TOp>(in TOp op)
-      where TOp : struct {
+      where TOp : struct
+  {
     _isBusy = true;
 
-    try {
+    try
+    {
       HandleValue(op);
     }
-    finally {
+    finally
+    {
       _isBusy = false;
     }
 
     Process();
   }
 
-  private void Perform() {
+  private void Perform()
+  {
     // dequeue an operation to perform
     var passthrough = new OpPassthrough(this);
     _ops.Dequeue(in passthrough);
   }
 
   private void HandleValue<TOp>(in TOp op)
-      where TOp : struct {
+      where TOp : struct
+  {
     // allow the object which owns us to handle the value and update its state
     // in a single atomic operation
-    if (_owner is IPerform<TOp> handler) {
+    if (_owner is IPerform<TOp> handler)
+    {
       handler.Perform(in op);
     }
   }
@@ -300,19 +328,24 @@ public sealed class SyncSubject : ISyncSubject {
   /// <see cref="IPerform{TBroadcast}.Perform(in TBroadcast)" />.
   /// </summary>
   public void Broadcast<TBroadcast>(in TBroadcast broadcast)
-      where TBroadcast : struct {
-    if (_isDisposed) { throw DisposedException; }
+      where TBroadcast : struct
+  {
+    if (_isDisposed)
+    { throw DisposedException; }
 
     var wasBusy = _isBusy;
 
     _isBusy = true;
 
-    try {
-      foreach (var binding in _bindings) {
+    try
+    {
+      foreach (var binding in _bindings)
+      {
         binding.InvokeCallbacks(in broadcast);
       }
     }
-    finally {
+    finally
+    {
       _isBusy = wasBusy;
     }
 
@@ -320,7 +353,8 @@ public sealed class SyncSubject : ISyncSubject {
     Process();
   }
 
-  private void Cleanup() {
+  private void Cleanup()
+  {
     // clear references to other managed objects
     _bindings.Clear();
     _ops.Clear();
@@ -328,8 +362,10 @@ public sealed class SyncSubject : ISyncSubject {
     _owner = null;
   }
 
-  private void Dispose(bool disposing) {
-    if (disposing) {
+  private void Dispose(bool disposing)
+  {
+    if (disposing)
+    {
       Cleanup();
     }
 
@@ -337,12 +373,15 @@ public sealed class SyncSubject : ISyncSubject {
   }
 
   /// <inheritdoc />
-  public void Dispose() {
-    if (_isDisposed) {
+  public void Dispose()
+  {
+    if (_isDisposed)
+    {
       return;
     }
 
-    if (_isBusy) {
+    if (_isBusy)
+    {
       // we're busy doing things up the call stack, so just schedule it later
       _internalOps.Enqueue(new INTERNAL_OP(INTERNAL_OP_TYPE.DISPOSE));
       return;
@@ -351,10 +390,12 @@ public sealed class SyncSubject : ISyncSubject {
     Dispose(disposing: true);
   }
 
-  private readonly struct OpPassthrough : IBoxlessValueHandler {
+  private readonly struct OpPassthrough : IBoxlessValueHandler
+  {
     public readonly SyncSubject Target { get; }
 
-    public OpPassthrough(SyncSubject target) {
+    public OpPassthrough(SyncSubject target)
+    {
       Target = target;
     }
     public readonly void HandleValue<TValue>(in TValue value)

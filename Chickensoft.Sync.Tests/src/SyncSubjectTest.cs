@@ -6,22 +6,27 @@ using Moq;
 using Shouldly;
 using Xunit;
 
-public sealed class SyncSubjectTest {
-  public sealed class TestOwner<T> : IPerform<T> where T : struct {
+public sealed class SyncSubjectTest
+{
+  public sealed class TestOwner<T> : IPerform<T> where T : struct
+  {
     public SyncSubject Subject { get; set; } = default!;
 
     public required Action<SyncSubject, T> Action { get; init; }
 
-    public void Perform(in T op) { Action(Subject, op); }
+    public void Perform(in T op) => Action(Subject, op);
   }
 
-  public TestOwner<int> Nop => new TestOwner<int>() {
-    Action = (SyncSubject _, int __) => { }
+  public TestOwner<int> Nop => new()
+  {
+    Action = (_, __) => { }
   };
 
-  public SyncSubject BuildSubject() {
-    var owner = new TestOwner<int> {
-      Action = (SyncSubject subj, int op) => subj.Broadcast(op)
+  public SyncSubject BuildSubject()
+  {
+    var owner = new TestOwner<int>
+    {
+      Action = (subj, op) => subj.Broadcast(op)
     };
     var subject = new SyncSubject(owner);
     owner.Subject = subject;
@@ -29,12 +34,14 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void InitializesAndDisposes() {
+  public void InitializesAndDisposes()
+  {
     using var subject = new SyncSubject(Nop);
   }
 
   [Fact]
-  public void AddBindingThrowsIfDisposed() {
+  public void AddBindingThrowsIfDisposed()
+  {
     var subject = new SyncSubject(Nop);
     subject.Dispose();
 
@@ -44,7 +51,8 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void RemoveBindingThrowsIfDisposed() {
+  public void RemoveBindingThrowsIfDisposed()
+  {
     var subject = new SyncSubject(Nop);
     subject.Dispose();
 
@@ -54,7 +62,8 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void ClearBindingsThrowsIfDisposed() {
+  public void ClearBindingsThrowsIfDisposed()
+  {
     var subject = new SyncSubject(Nop);
     subject.Dispose();
 
@@ -62,7 +71,8 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void PerformThrowsIfDisposed() {
+  public void PerformThrowsIfDisposed()
+  {
     var subject = new SyncSubject(Nop);
     subject.Dispose();
 
@@ -70,7 +80,8 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void BroadcastThrowsIfDisposed() {
+  public void BroadcastThrowsIfDisposed()
+  {
     var subject = new SyncSubject(Nop);
     subject.Dispose();
 
@@ -81,7 +92,8 @@ public sealed class SyncSubjectTest {
   // "protects against re-entry by deferring"
 
   [Fact]
-  public void AddsBindingSerialized() {
+  public void AddsBindingSerialized()
+  {
     var subject = BuildSubject();
 
     var binding1 = new Mock<ISyncBinding>();
@@ -90,10 +102,12 @@ public sealed class SyncSubjectTest {
     var calls = 0;
 
     binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) => {
+      .Callback((in int value) =>
+      {
         calls++;
 
-        if (calls == 1) {
+        if (calls == 1)
+        {
           subject.AddBinding(binding2.Object);
           // this should not be available yet
           subject._bindings.ShouldNotContain(binding2.Object);
@@ -107,7 +121,8 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void RemovesBindingSerialized() {
+  public void RemovesBindingSerialized()
+  {
     var subject = BuildSubject();
 
     var binding1 = new Mock<ISyncBinding>();
@@ -116,10 +131,12 @@ public sealed class SyncSubjectTest {
     var calls = 0;
 
     binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) => {
+      .Callback((in int value) =>
+      {
         calls++;
 
-        if (calls == 1) {
+        if (calls == 1)
+        {
           subject.RemoveBinding(binding2.Object);
           // this should not be removed yet
           subject._bindings.ShouldContain(binding2.Object);
@@ -134,7 +151,8 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void ClearsBindingsSerialized() {
+  public void ClearsBindingsSerialized()
+  {
     var subject = BuildSubject();
 
     var binding1 = new Mock<ISyncBinding>();
@@ -143,10 +161,12 @@ public sealed class SyncSubjectTest {
     var calls = 0;
 
     binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) => {
+      .Callback((in int value) =>
+      {
         calls++;
 
-        if (calls == 1) {
+        if (calls == 1)
+        {
           subject.ClearBindings();
           // these should not be cleared yet
           subject._bindings.ShouldContain(binding1.Object);
@@ -162,10 +182,13 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void PerformsOpsSerialized() {
+  public void PerformsOpsSerialized()
+  {
     var log = new List<string>();
-    var owner = new TestOwner<int>() {
-      Action = (SyncSubject subj, int value) => {
+    var owner = new TestOwner<int>()
+    {
+      Action = (subj, value) =>
+      {
         log.Add($"owner {value}");
         subj.Broadcast(value);
       }
@@ -180,13 +203,15 @@ public sealed class SyncSubjectTest {
     var calls = 0;
 
     binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) => {
+      .Callback((in int value) =>
+      {
         log.Add($"callback {value}");
         calls++;
 
         subject.IsBusy.ShouldBeTrue();
 
-        if (calls == 1) {
+        if (calls == 1)
+        {
           subject.Perform(2);
           // this should not be broadcast yet
           binding2.Verify(
@@ -208,7 +233,8 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void DisposesSerialized() {
+  public void DisposesSerialized()
+  {
     var subject = BuildSubject();
 
     var binding1 = new Mock<ISyncBinding>();
@@ -216,10 +242,12 @@ public sealed class SyncSubjectTest {
     var calls = 0;
 
     binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) => {
+      .Callback((in int value) =>
+      {
         calls++;
 
-        if (calls == 1) {
+        if (calls == 1)
+        {
           subject.Dispose();
           // should not be disposed yet
           subject._isDisposed.ShouldBeFalse();
@@ -236,7 +264,8 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void ClearThrowsDisposed() {
+  public void ClearThrowsDisposed()
+  {
     var subject = new SyncSubject(Nop);
     subject.Dispose();
 
@@ -244,7 +273,8 @@ public sealed class SyncSubjectTest {
   }
 
   [Fact]
-  public void ClearsPendingOperations() {
+  public void ClearsPendingOperations()
+  {
     var subject = BuildSubject();
 
     var binding1 = new Mock<ISyncBinding>();
@@ -252,10 +282,12 @@ public sealed class SyncSubjectTest {
     var calls = 0;
 
     binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) => {
+      .Callback((in int value) =>
+      {
         calls++;
 
-        if (calls == 1) {
+        if (calls == 1)
+        {
           subject.Perform(2); // never happens because we clear
           subject.Clear();
         }

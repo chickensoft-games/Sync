@@ -7,18 +7,22 @@ using Chickensoft.Sync.Primitives;
 using Shouldly;
 using Xunit;
 
-public sealed class AutoMapTest {
+public sealed class AutoMapTest
+{
   [Fact]
-  public void Initializes() {
+  public void Initializes()
+  {
     var map = new AutoMap<int, string>();
     map.Count.ShouldBe(0);
     map.IsReadOnly.ShouldBeFalse();
   }
 
   [Fact]
-  public void InitializesWithItemsAndComparers() {
+  public void InitializesWithItemsAndComparers()
+  {
     var map = new AutoMap<string, string>(
-      new Dictionary<string, string> {
+      new Dictionary<string, string>
+      {
         ["1"] = "one",
         ["2"] = "two"
       },
@@ -33,12 +37,13 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void AddBroadcasts() {
+  public void AddBroadcasts()
+  {
     var map = new AutoMap<int, string>();
     var log = new List<string>();
     using var binding = map.Bind();
 
-    binding.OnAdd((int key, string value) => log.Add($"add {key} -> {value}"));
+    binding.OnAdd((key, value) => log.Add($"add {key} -> {value}"));
 
     map.Add(1, "one");
 
@@ -48,12 +53,13 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void UpdateBroadcasts() {
+  public void UpdateBroadcasts()
+  {
     var map = new AutoMap<int, string> { [1] = "one" };
     var log = new List<string>();
     using var binding = map.Bind();
 
-    binding.OnUpdate((int key, string oldValue, string newValue) =>
+    binding.OnUpdate((key, oldValue, newValue) =>
       log.Add($"update {key} : {oldValue} -> {newValue}"));
 
     map[1] = "uno";
@@ -64,13 +70,14 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void OnRemoveWithValueBroadcasts() {
+  public void OnRemoveWithValueBroadcasts()
+  {
     var map = new AutoMap<int, string> { [1] = "one" };
     var log = new List<string>();
     using var binding = map.Bind();
 
     binding.OnRemove(
-      (int key, string value) => log.Add($"remove {key} -> {value}")
+      (key, value) => log.Add($"remove {key} -> {value}")
     );
 
     map.Remove(1);
@@ -80,12 +87,13 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void OnRemoveBroadcasts() {
+  public void OnRemoveBroadcasts()
+  {
     var map = new AutoMap<int, string> { [1] = "one" };
     var log = new List<string>();
     using var binding = map.Bind();
 
-    binding.OnRemove((int key) => log.Add($"remove {key}"));
+    binding.OnRemove(key => log.Add($"remove {key}"));
 
     map.Remove(1);
 
@@ -94,7 +102,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void ClearBroadcasts() {
+  public void ClearBroadcasts()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     var log = new List<string>();
     using var binding = map.Bind();
@@ -108,7 +117,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void ProvidesBoxedEnumerableAndCollections() {
+  public void ProvidesBoxedEnumerableAndCollections()
+  {
     var map = new AutoMap<int, string>();
     var mDict = map as IDictionary<int, string>;
     var rDict = map as IReadOnlyDictionary<int, string>;
@@ -120,11 +130,13 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void KeysEnumerator() {
+  public void KeysEnumerator()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     var keys = new List<int>();
 
-    foreach (var key in map.Keys) {
+    foreach (var key in map.Keys)
+    {
       keys.Add(key);
     }
 
@@ -134,11 +146,13 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void ValuesEnumerator() {
+  public void ValuesEnumerator()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     var values = new List<string>();
 
-    foreach (var value in map.Values) {
+    foreach (var value in map.Values)
+    {
       values.Add(value);
     }
 
@@ -148,7 +162,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void AddsAndRemovesAndClearsBindings() {
+  public void AddsAndRemovesAndClearsBindings()
+  {
     var map = new AutoMap<int, string>();
     var log = new List<string>();
 
@@ -156,9 +171,9 @@ public sealed class AutoMapTest {
     var b2 = map.Bind();
     var b3 = map.Bind();
 
-    b1.OnAdd((int key, string value) => log.Add($"b1 add {key} -> {value}"));
-    b2.OnAdd((int key, string value) => log.Add($"b2 add {key} -> {value}"));
-    b3.OnAdd((int key, string value) => log.Add($"b3 add {key} -> {value}"));
+    b1.OnAdd((key, value) => log.Add($"b1 add {key} -> {value}"));
+    b2.OnAdd((key, value) => log.Add($"b2 add {key} -> {value}"));
+    b3.OnAdd((key, value) => log.Add($"b3 add {key} -> {value}"));
 
     b2.Dispose(); // removes it
 
@@ -174,7 +189,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void ContainsKey() {
+  public void ContainsKey()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     map.ContainsKey(1).ShouldBeTrue();
     map.ContainsKey(2).ShouldBeTrue();
@@ -182,7 +198,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void TryGetValue() {
+  public void TryGetValue()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     map.TryGetValue(1, out var value1).ShouldBeTrue();
     value1.ShouldBe("one");
@@ -193,7 +210,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void Contains() {
+  public void Contains()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     map.Contains(new KeyValuePair<int, string>(1, "one")).ShouldBeTrue();
     map.Contains(new KeyValuePair<int, string>(2, "two")).ShouldBeTrue();
@@ -201,7 +219,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void AddKvp() {
+  public void AddKvp()
+  {
     var map = new AutoMap<int, string>();
 
     map.Count.ShouldBe(0);
@@ -216,13 +235,14 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void RemoveKvp() {
+  public void RemoveKvp()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     var log = new List<string>();
 
     using var binding = map.Bind();
     binding.OnRemove(
-      (int key, string value) => log.Add($"remove {key} -> {value}")
+      (key, value) => log.Add($"remove {key} -> {value}")
     );
 
     map.Remove(new KeyValuePair<int, string>(1, "one"));
@@ -238,7 +258,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void AddUpdatesIfAlreadyExists() {
+  public void AddUpdatesIfAlreadyExists()
+  {
     var map = new AutoMap<int, string> { [1] = "one" };
     map.Add(1, "uno");
     map.Count.ShouldBe(1);
@@ -246,12 +267,13 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void RemoveDoesNotBroadcastIfKeyDoesNotExist() {
+  public void RemoveDoesNotBroadcastIfKeyDoesNotExist()
+  {
     var map = new AutoMap<int, string> { [1] = "one" };
     var called = false;
 
     using var binding = map.Bind();
-    binding.OnRemove((int _, string __) => called = true);
+    binding.OnRemove((_, __) => called = true);
 
     map.Remove(2);
 
@@ -259,12 +281,13 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void RemoveMatchingDoesNotBroadcastIfKeyDoesNotExist() {
+  public void RemoveMatchingDoesNotBroadcastIfKeyDoesNotExist()
+  {
     var map = new AutoMap<int, string> { [1] = "one" };
     var called = false;
 
     using var binding = map.Bind();
-    binding.OnRemove((int _, string __) => called = true);
+    binding.OnRemove((_, __) => called = true);
 
     map.Remove(new KeyValuePair<int, string>(2, "two"));
 
@@ -272,7 +295,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void ClearDoesNotBroadcastIfEmpty() {
+  public void ClearDoesNotBroadcastIfEmpty()
+  {
     var map = new AutoMap<int, string>();
     var called = false;
 
@@ -285,7 +309,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void CopyTo() {
+  public void CopyTo()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     var array = new KeyValuePair<int, string>[2];
 
@@ -296,13 +321,15 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void ProvidesBoxedEnumerator() {
+  public void ProvidesBoxedEnumerator()
+  {
     IEnumerable<KeyValuePair<int, string>> map =
       new AutoMap<int, string> { [1] = "one", [2] = "two", [3] = "three" };
     var enumerator = map.GetEnumerator();
     var items = new List<KeyValuePair<int, string>>();
 
-    while (enumerator.MoveNext()) {
+    while (enumerator.MoveNext())
+    {
       items.Add(enumerator.Current);
     }
 
@@ -319,8 +346,10 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void IDictionaryRemoveKeyIsNotSupported() {
-    IDictionary<int, string> map = new AutoMap<int, string> {
+  public void IDictionaryRemoveKeyIsNotSupported()
+  {
+    IDictionary<int, string> map = new AutoMap<int, string>
+    {
       [1] = "one",
       [2] = "two"
     };
@@ -329,8 +358,10 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void ICollectionRemoveKvpIsNotSupported() {
-    ICollection<KeyValuePair<int, string>> map = new AutoMap<int, string> {
+  public void ICollectionRemoveKvpIsNotSupported()
+  {
+    ICollection<KeyValuePair<int, string>> map = new AutoMap<int, string>
+    {
       [1] = "one",
       [2] = "two"
     };
@@ -340,7 +371,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void Disposes() {
+  public void Disposes()
+  {
     var map = new AutoMap<int, string>();
 
     map.Dispose();
@@ -349,11 +381,13 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void Enumerates() {
+  public void Enumerates()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     var items = new Dictionary<int, string>();
 
-    foreach (var kvp in map) {
+    foreach (var kvp in map)
+    {
       items.Add(kvp.Key, kvp.Value);
     }
 
@@ -362,7 +396,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void KeyEnumeratorForwards() {
+  public void KeyEnumeratorForwards()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     var enumerator = map.Keys;
 
@@ -378,7 +413,8 @@ public sealed class AutoMapTest {
   }
 
   [Fact]
-  public void ValueEnumeratorForwards() {
+  public void ValueEnumeratorForwards()
+  {
     var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
     var enumerator = map.Values;
 

@@ -11,21 +11,21 @@ using R3;
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
-public class Allocation {
+public class Allocation
+{
   [Benchmark(Baseline = true)]
-  public object MakeObject() {
-    return new object();
-  }
+  public object MakeObject() => new();
 
   [Benchmark]
-  public (object, object) MakeTwoObjects() => (new object(), new object());
+  public (object, object) MakeTwoObjects() => (new(), new());
 }
 
 [ShortRunJob]
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
-public class SimpleRepeatedInvoke {
+public class SimpleRepeatedInvoke
+{
   private ReactiveProperty<int> _r3ReactiveProperty = default!;
   private IDisposable _r3Listener = default!;
 
@@ -37,7 +37,8 @@ public class SimpleRepeatedInvoke {
   public int N;
 
   [GlobalSetup]
-  public void Setup() {
+  public void Setup()
+  {
     _r3ReactiveProperty = new ReactiveProperty<int>(0);
     _r3Listener = _r3ReactiveProperty.Subscribe(static _ => { });
 
@@ -46,21 +47,26 @@ public class SimpleRepeatedInvoke {
   }
 
   [GlobalCleanup]
-  public void Cleanup() {
+  public void Cleanup()
+  {
     _r3Listener.Dispose();
     _autoValueBinding.Dispose();
   }
 
   [Benchmark(Baseline = true)]
-  public void R3ReactiveProperty() {
-    for (var i = 0; i < N; i++) {
+  public void R3ReactiveProperty()
+  {
+    for (var i = 0; i < N; i++)
+    {
       _r3ReactiveProperty.Value = i;
     }
   }
 
   [Benchmark]
-  public void AutoValueSet() {
-    for (var i = 0; i < N; i++) {
+  public void AutoValueSet()
+  {
+    for (var i = 0; i < N; i++)
+    {
       _autoValue.Value = i;
     }
   }

@@ -2,6 +2,7 @@ namespace Chickensoft.Sync;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 /// <summary>
@@ -27,7 +28,8 @@ public delegate bool Condition<TBroadcast>(in TBroadcast broadcast)
 /// a <see cref="SyncSubject" />. A sync binding should be created by a reactive
 /// object and only ever assigned as a listener to one sync subject.
 /// </summary>
-public interface ISyncBinding : IDisposable {
+public interface ISyncBinding : IDisposable
+{
   /// <summary>
   /// Invokes the callbacks associated with a particular type of broadcast. This
   /// will invoke every callback registered for the specified type of broadcast
@@ -50,7 +52,8 @@ public interface ISyncBinding : IDisposable {
 /// a <see cref="SyncSubject" />. A sync binding should be created by a reactive
 /// object and only ever assigned as a listener to one sync subject.
 /// </summary>
-public abstract class SyncBinding : ISyncBinding {
+public abstract class SyncBinding : ISyncBinding
+{
   private readonly Dictionary<Type, List<object>>
     _callbacks;
 
@@ -68,10 +71,12 @@ public abstract class SyncBinding : ISyncBinding {
   /// <summary>
   /// Creates a new <see cref="SyncBinding" />.
   /// </summary>
-  protected SyncBinding(ISyncSubject subject) {
+  protected SyncBinding(ISyncSubject subject)
+  {
     _callbacks = [];
     _subject = subject;
-    if (subject.IsDisposed) {
+    if (subject.IsDisposed)
+    {
       throw new ObjectDisposedException(
         nameof(SyncSubject),
         "Cannot create a binding to a disposed subject."
@@ -90,22 +95,34 @@ public abstract class SyncBinding : ISyncBinding {
   /// <param name="condition">Optional predicate that checks if the
   /// callback should be invoked for a given broadcast. If not specified, the
   /// callback will be invoked for any broadcast of the specified type.</param>
+  [
+    SuppressMessage(
+      "Style",
+      "IDE0350",
+      Justification = "Implicit lambda with ref type won't compile"
+    )
+  ]
   protected internal void AddCallback<TBroadcast>(
     Callback<TBroadcast> callback,
     Condition<TBroadcast>? condition = null
-  ) where TBroadcast : struct {
-    if (_isDisposed) { throw DisposedException; }
+  ) where TBroadcast : struct
+  {
+    if (_isDisposed)
+    { throw DisposedException; }
 
     var type = typeof(TBroadcast);
 
-    if (!_callbacks.TryGetValue(type, out var callbacks)) {
+    if (!_callbacks.TryGetValue(type, out var callbacks))
+    {
       _callbacks[type] = callbacks = [];
     }
 
     var wrappedCallback = condition is null
       ? callback
-      : (in TBroadcast broadcast) => {
-        if (condition(in broadcast)) {
+      : (in TBroadcast broadcast) =>
+      {
+        if (condition(in broadcast))
+        {
           callback(in broadcast);
         }
       };
@@ -115,12 +132,15 @@ public abstract class SyncBinding : ISyncBinding {
 
   /// <inheritdoc />
   public void InvokeCallbacks<TBroadcast>(in TBroadcast broadcast)
-    where TBroadcast : struct {
-    if (_isDisposed) { throw DisposedException; }
+    where TBroadcast : struct
+  {
+    if (_isDisposed)
+    { throw DisposedException; }
 
     var callbacks = GetCallbacks<TBroadcast>();
 
-    for (var i = 0; i < callbacks.Count; i++) {
+    for (var i = 0; i < callbacks.Count; i++)
+    {
       var callback = Unsafe.As<Callback<TBroadcast>>(callbacks[i]);
       callback(in broadcast);
     }
@@ -131,10 +151,12 @@ public abstract class SyncBinding : ISyncBinding {
   /// </summary>
   /// <typeparam name="TBroadcast">Broadcast type.</typeparam>
   private List<object> GetCallbacks<TBroadcast>()
-      where TBroadcast : struct {
+      where TBroadcast : struct
+  {
     var type = typeof(TBroadcast);
 
-    if (!_callbacks.TryGetValue(type, out var callbacks)) {
+    if (!_callbacks.TryGetValue(type, out var callbacks))
+    {
       return _emptyCallbacks;
     }
 
@@ -146,23 +168,25 @@ public abstract class SyncBinding : ISyncBinding {
   /// derived classes to add custom cleanup logic, but be sure to call the base
   /// implementation.
   /// </summary>
-  protected virtual void Cleanup() {
+  protected virtual void Cleanup()
+  {
     _callbacks.Clear();
     _subject!.RemoveBinding(this);
     _subject = null;
   }
 
-  private void Dispose(bool disposing) {
-    if (_isDisposed) { return; }
+  private void Dispose(bool disposing)
+  {
+    if (_isDisposed)
+    { return; }
 
-    if (disposing) {
+    if (disposing)
+    {
       Cleanup();
       _isDisposed = true;
     }
   }
 
   /// <inheritdoc />
-  public void Dispose() {
-    Dispose(disposing: true);
-  }
+  public void Dispose() => Dispose(disposing: true);
 }

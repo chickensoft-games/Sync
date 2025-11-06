@@ -7,16 +7,19 @@ using Chickensoft.Sync.Primitives;
 using Shouldly;
 using Xunit;
 
-public sealed class AutoSetTest {
+public sealed class AutoSetTest
+{
   [Fact]
-  public void Initializes() {
+  public void Initializes()
+  {
     var set = new AutoSet<int>();
     set.Count.ShouldBe(0);
     set.IsReadOnly.ShouldBeFalse();
   }
 
   [Fact]
-  public void InitializesWithItemsAndComparer() {
+  public void InitializesWithItemsAndComparer()
+  {
     var set = new AutoSet<string>(
       new HashSet<string> { "one", "two" },
       StringComparer.OrdinalIgnoreCase
@@ -31,12 +34,13 @@ public sealed class AutoSetTest {
   }
 
   [Fact]
-  public void AddBroadcasts() {
+  public void AddBroadcasts()
+  {
     var set = new AutoSet<int>();
     var log = new List<string>();
     using var binding = set.Bind();
 
-    binding.OnAdd((int item) => log.Add($"add {item}"));
+    binding.OnAdd(item => log.Add($"add {item}"));
 
     set.Add(1);
 
@@ -46,12 +50,13 @@ public sealed class AutoSetTest {
   }
 
   [Fact]
-  public void OnRemoveBroadcasts() {
+  public void OnRemoveBroadcasts()
+  {
     var set = new AutoSet<int> { 1 };
     var log = new List<string>();
     using var binding = set.Bind();
 
-    binding.OnRemove((int item) => log.Add($"remove {item}"));
+    binding.OnRemove(item => log.Add($"remove {item}"));
 
     set.Remove(1);
 
@@ -61,7 +66,8 @@ public sealed class AutoSetTest {
   }
 
   [Fact]
-  public void ClearBroadcasts() {
+  public void ClearBroadcasts()
+  {
     var set = new AutoSet<int> { 1, 2, 3 };
     var log = new List<string>();
     using var binding = set.Bind();
@@ -78,7 +84,8 @@ public sealed class AutoSetTest {
   }
 
   [Fact]
-  public void CopyTo() {
+  public void CopyTo()
+  {
     var set = new AutoSet<int> { 1, 2, 3 };
     var array = new int[5];
     set.CopyTo(array, 1);
@@ -88,13 +95,15 @@ public sealed class AutoSetTest {
   }
 
   [Fact]
-  public void ICollectionRemoveThrows() {
+  public void ICollectionRemoveThrows()
+  {
     var set = new AutoSet<int> { 1, 2, 3 } as ICollection<int>;
     Should.Throw<NotSupportedException>(() => set.Remove(1));
   }
 
   [Fact]
-  public void ProvidesBoxedEnumerator() {
+  public void ProvidesBoxedEnumerator()
+  {
     var set = new AutoSet<int> { 1, 2, 3 } as IEnumerable<int>;
     var enumerator = set.GetEnumerator();
     (set as IEnumerable).GetEnumerator()
@@ -102,7 +111,8 @@ public sealed class AutoSetTest {
 
     var items = new List<int>();
 
-    while (enumerator.MoveNext()) {
+    while (enumerator.MoveNext())
+    {
       items.Add(enumerator.Current);
     }
 
@@ -113,7 +123,8 @@ public sealed class AutoSetTest {
   }
 
   [Fact]
-  public void ClearDoesNotBroadcastWhenEmpty() {
+  public void ClearDoesNotBroadcastWhenEmpty()
+  {
     var set = new AutoSet<int>();
     var called = false;
     using var binding = set.Bind();
@@ -125,7 +136,8 @@ public sealed class AutoSetTest {
   }
 
   [Fact]
-  public void BindingRespectsDerivedTypes() {
+  public void BindingRespectsDerivedTypes()
+  {
     var set = new AutoSet<Animal>();
     var log = new List<string>();
 
@@ -133,7 +145,7 @@ public sealed class AutoSetTest {
     binding.OnAdd((Dog dog) => log.Add($"add dog {dog.Name}"));
     binding.OnAdd((Poodle poodle) => log.Add($"add poodle {poodle.Name}"));
     binding.OnRemove((Cat cat) => log.Add($"remove cat {cat.Name}"));
-    binding.OnRemove((Animal animal) => log.Add($"remove animal {animal.Name}"));
+    binding.OnRemove(animal => log.Add($"remove animal {animal.Name}"));
 
     var pickles = new Cat("Pickles");
     var boots = new Dog("Boots");
@@ -166,7 +178,8 @@ public sealed class AutoSetTest {
   }
 
   [Fact]
-  public void Disposes() {
+  public void Disposes()
+  {
     var set = new AutoSet<int>();
 
     set.Dispose();

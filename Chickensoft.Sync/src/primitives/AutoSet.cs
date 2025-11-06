@@ -3,11 +3,13 @@ namespace Chickensoft.Sync.Primitives;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>A readonly reference to an observable set.</summary>
 /// <typeparam name="T">Item type.</typeparam>
 public interface IAutoSet<T> :
-  IAutoObject<AutoSet<T>.Binding>, IReadOnlyCollection<T> {
+  IAutoObject<AutoSet<T>.Binding>, IReadOnlyCollection<T>
+{
   /// <summary>
   /// Equality comparer used to determine item equality (and hashing).
   /// </summary>
@@ -43,7 +45,8 @@ public interface IAutoSet<T> :
 public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     IPerform<AutoSet<T>.AddOp>,
     IPerform<AutoSet<T>.RemoveOp>,
-    IPerform<AutoSet<T>.ClearOp> {
+    IPerform<AutoSet<T>.ClearOp>
+{
   private readonly record struct AddOp(T Item);
   private readonly record struct RemoveOp(T Item);
   private readonly record struct ClearOp();
@@ -55,7 +58,8 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
   /// <summary>
   /// A binding to an <see cref="AutoSet{T}" />.
   /// </summary>
-  public sealed class Binding : SyncBinding {
+  public sealed class Binding : SyncBinding
+  {
     internal Binding(ISyncSubject subject) : base(subject) { }
 
     /// <summary>
@@ -63,7 +67,8 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     /// </summary>
     /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnAdd(Action<T> callback) {
+    public Binding OnAdd(Action<T> callback)
+    {
       AddCallback((in AddBroadcast b) => callback(b.Item));
 
       return this;
@@ -76,8 +81,16 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     /// <param name="callback">Callback to be invoked.</param>
     /// <typeparam name="TDerived">Subtype of item to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnAdd<TDerived>(Action<TDerived> callback)
-      where TDerived : T {
+      where TDerived : T
+    {
       AddCallback(
         (in AddBroadcast b) => callback((TDerived)b.Item!),
         (in AddBroadcast b) => b.Item is TDerived
@@ -91,7 +104,8 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     /// </summary>
     /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnRemove(Action<T> callback) {
+    public Binding OnRemove(Action<T> callback)
+    {
       AddCallback((in RemoveBroadcast b) => callback(b.Item));
 
       return this;
@@ -104,8 +118,16 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     /// <param name="callback">Callback to be invoked.</param>
     /// <typeparam name="TDerived">Subtype of item to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnRemove<TDerived>(Action<TDerived> callback)
-      where TDerived : T {
+      where TDerived : T
+    {
       AddCallback(
         (in RemoveBroadcast b) => callback((TDerived)b.Item!),
         (in RemoveBroadcast b) => b.Item is TDerived
@@ -119,7 +141,8 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     /// </summary>
     /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnClear(Action callback) {
+    public Binding OnClear(Action callback)
+    {
       AddCallback((in ClearBroadcast _) => callback());
 
       return this;
@@ -149,7 +172,8 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
   public AutoSet(
     IEnumerable<T>? items = null,
     IEqualityComparer<T>? comparer = null
-  ) {
+  )
+  {
     _subject = new(this);
     _set = items is not null
       ? new HashSet<T>(items, comparer: comparer)
@@ -159,7 +183,7 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
   #region AutoCollection
 
   /// <inheritdoc />
-  public Binding Bind() => new Binding(_subject);
+  public Binding Bind() => new(_subject);
 
   /// <inheritdoc />
   public void ClearBindings() => _subject.ClearBindings();
@@ -219,20 +243,26 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
 
   #region Operations
 
-  void IPerform<AddOp>.Perform(in AddOp operation) {
-    if (_set.Add(operation.Item)) {
+  void IPerform<AddOp>.Perform(in AddOp operation)
+  {
+    if (_set.Add(operation.Item))
+    {
       _subject.Broadcast(new AddBroadcast(operation.Item));
     }
   }
 
-  void IPerform<RemoveOp>.Perform(in RemoveOp operation) {
-    if (_set.Remove(operation.Item)) {
+  void IPerform<RemoveOp>.Perform(in RemoveOp operation)
+  {
+    if (_set.Remove(operation.Item))
+    {
       _subject.Broadcast(new RemoveBroadcast(operation.Item));
     }
   }
 
-  void IPerform<ClearOp>.Perform(in ClearOp operation) {
-    if (_set.Count == 0) { return; }
+  void IPerform<ClearOp>.Perform(in ClearOp operation)
+  {
+    if (_set.Count == 0)
+    { return; }
 
     _set.Clear();
 

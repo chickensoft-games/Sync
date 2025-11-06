@@ -2,6 +2,7 @@ namespace Chickensoft.Sync.Primitives;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// <para>
@@ -17,7 +18,8 @@ using System.Collections.Generic;
 /// </para>
 /// </summary>
 /// <typeparam name="T">Type of the value.</typeparam>
-public interface IAutoValue<T> : IAutoObject<AutoValue<T>.Binding> {
+public interface IAutoValue<T> : IAutoObject<AutoValue<T>.Binding>
+{
   /// <summary>Current value.</summary>
   T Value { get; }
 
@@ -44,7 +46,8 @@ public interface IAutoValue<T> : IAutoObject<AutoValue<T>.Binding> {
 public sealed class AutoValue<T> : IAutoValue<T>,
     IPerform<AutoValue<T>.UpdateOp>,
     IPerform<AutoValue<T>.SyncOp>,
-    IPerform<AutoValue<T>.SyncDerivedOp> {
+    IPerform<AutoValue<T>.SyncDerivedOp>
+{
   // Atomic operations
   private readonly record struct UpdateOp(T Value);
   //    these 2 sync operations are used to invoke callbacks as soon as possible
@@ -62,7 +65,8 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   /// <summary>
   /// A binding to an <see cref="AutoValue{T}"/>.
   /// </summary>
-  public class Binding : SyncBinding {
+  public class Binding : SyncBinding
+  {
     internal Binding(ISyncSubject subject) : base(subject) { }
 
     /// <summary>
@@ -72,9 +76,17 @@ public sealed class AutoValue<T> : IAutoValue<T>,
     /// <param name="condition">Optional condition that must be true for the
     /// callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnValue(
       Action<T> callback, Func<T, bool>? condition = null
-    ) {
+    )
+    {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
 
       AddCallback(
@@ -97,9 +109,17 @@ public sealed class AutoValue<T> : IAutoValue<T>,
     /// callback to be invoked.</param>
     /// <typeparam name="TDerived">Subtype of value to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnValue<TDerived>(
       Action<TDerived> callback, Func<T, bool>? condition = null
-    ) where TDerived : T {
+    ) where TDerived : T
+    {
 
       bool predicate(T value) =>
         value is TDerived && (condition?.Invoke(value) ?? true);
@@ -128,7 +148,8 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   public IEqualityComparer<T> Comparer { get; }
 
   /// <inheritdoc />
-  public T Value {
+  public T Value
+  {
     get => _value;
     set => _subject.Perform(new UpdateOp(value));
   }
@@ -154,14 +175,15 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   /// <param name="comparer">Equality comparer used to determine value
   /// equality. If null, the default equality comparer for the type is used.
   /// </param>
-  public AutoValue(T value, IEqualityComparer<T>? comparer = null) {
+  public AutoValue(T value, IEqualityComparer<T>? comparer = null)
+  {
     _value = value;
     _subject = new(this);
     Comparer = comparer ?? EqualityComparer<T>.Default;
   }
 
   /// <inheritdoc />
-  public Binding Bind() => new Binding(_subject);
+  public Binding Bind() => new(_subject);
 
   /// <inheritdoc />
   public void ClearBindings() => _subject.ClearBindings();
@@ -169,8 +191,10 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   /// <inheritdoc />
   public void Dispose() => _subject.Dispose();
 
-  void IPerform<UpdateOp>.Perform(in UpdateOp op) {
-    if (Comparer.Equals(_value, op.Value)) {
+  void IPerform<UpdateOp>.Perform(in UpdateOp op)
+  {
+    if (Comparer.Equals(_value, op.Value))
+    {
       return;
     }
 
@@ -180,15 +204,19 @@ public sealed class AutoValue<T> : IAutoValue<T>,
     _subject.Broadcast(new UpdateBroadcast(op.Value));
   }
 
-  void IPerform<SyncOp>.Perform(in SyncOp op) {
-    if (op.Condition(_value)) {
+  void IPerform<SyncOp>.Perform(in SyncOp op)
+  {
+    if (op.Condition(_value))
+    {
       // synchronize specific callback as soon as possible after its initialization
       op.Callback(_value);
     }
   }
 
-  void IPerform<SyncDerivedOp>.Perform(in SyncDerivedOp op) {
-    if (op.Condition(_value)) {
+  void IPerform<SyncDerivedOp>.Perform(in SyncDerivedOp op)
+  {
+    if (op.Condition(_value))
+    {
       // synchronize specific callback as soon as possible after its initialization
       op.Callback(_value);
     }
