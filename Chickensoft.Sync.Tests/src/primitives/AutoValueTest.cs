@@ -6,15 +6,18 @@ using Chickensoft.Sync.Primitives;
 using Shouldly;
 using Xunit;
 
-public sealed class AutoValueTest {
+public sealed class AutoValueTest
+{
   [Fact]
-  public void InitialValue() {
+  public void InitialValue()
+  {
     var autoValue = new AutoValue<int>(5);
     autoValue.Value.ShouldBe(5);
   }
 
   [Fact]
-  public void BroadcastsChanges() {
+  public void BroadcastsChanges()
+  {
     var autoValue = new AutoValue<int>(1);
     autoValue.Value.ShouldBe(1);
 
@@ -35,7 +38,8 @@ public sealed class AutoValueTest {
   }
 
   [Fact]
-  public void BindingRespectsDerivedTypes() {
+  public void BindingRespectsDerivedTypes()
+  {
     var boots = new Dog("Boots");
     var cookie = new Poodle("Cookie");
     var brisket = new Poodle("Brisket");
@@ -78,7 +82,8 @@ public sealed class AutoValueTest {
   }
 
   [Fact]
-  public void ClearsBindings() {
+  public void ClearsBindings()
+  {
     var autoValue = new AutoValue<int>(1);
     var log = new List<int>();
 
@@ -95,7 +100,8 @@ public sealed class AutoValueTest {
   }
 
   [Fact]
-  public void DoesNotCallBindingsIfSameValue() {
+  public void DoesNotCallBindingsIfSameValue()
+  {
     var autoValue = new AutoValue<int>(1);
     var log = new List<int>();
 
@@ -108,7 +114,8 @@ public sealed class AutoValueTest {
   }
 
   [Fact]
-  public void Disposes() {
+  public void Disposes()
+  {
     var value = new AutoValue<int>(1);
 
     value.Dispose();

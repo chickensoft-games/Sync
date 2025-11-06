@@ -10,7 +10,8 @@ using System.Diagnostics.CodeAnalysis;
 /// <typeparam name="TValue">Value type.</typeparam>
 public interface IAutoMap<TKey, TValue> :
     IAutoObject<AutoMap<TKey, TValue>.Binding>,
-    IReadOnlyDictionary<TKey, TValue> where TKey : notnull {
+    IReadOnlyDictionary<TKey, TValue> where TKey : notnull
+{
   /// <summary>
   /// Equality comparer used to determine key equality.
   /// </summary>
@@ -40,7 +41,8 @@ public sealed class AutoMap<TKey, TValue> :
     IPerform<AutoMap<TKey, TValue>.RemoveOp>,
     IPerform<AutoMap<TKey, TValue>.RemoveMatchingOp>,
     IPerform<AutoMap<TKey, TValue>.ClearOp>
-    where TKey : notnull {
+    where TKey : notnull
+{
   // Atomic operations
   private readonly record struct AddOp(TKey Key, TValue Value);
   private readonly record struct UpdateOp(TKey Key, TValue Value);
@@ -59,7 +61,8 @@ public sealed class AutoMap<TKey, TValue> :
   /// <summary>
   /// A binding to an <see cref="AutoMap{TKey, TValue}" />.
   /// </summary>
-  public sealed class Binding : SyncBinding {
+  public sealed class Binding : SyncBinding
+  {
     internal Binding(ISyncSubject subject) : base(subject) { }
 
     /// <summary>
@@ -67,7 +70,8 @@ public sealed class AutoMap<TKey, TValue> :
     /// </summary>
     /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnAdd(Action<TKey, TValue> callback) {
+    public Binding OnAdd(Action<TKey, TValue> callback)
+    {
       AddCallback((in AddBroadcast b) => callback(b.Key, b.Value));
 
       return this;
@@ -78,7 +82,8 @@ public sealed class AutoMap<TKey, TValue> :
     /// </summary>
     /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnUpdate(Action<TKey, TValue, TValue> callback) {
+    public Binding OnUpdate(Action<TKey, TValue, TValue> callback)
+    {
       AddCallback(
         (in UpdateBroadcast b) => callback(b.Key, b.Previous, b.Value)
       );
@@ -91,7 +96,8 @@ public sealed class AutoMap<TKey, TValue> :
     /// </summary>
     /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnRemove(Action<TKey, TValue> callback) {
+    public Binding OnRemove(Action<TKey, TValue> callback)
+    {
       AddCallback((in RemoveBroadcast b) => callback(b.Key, b.Value));
 
       return this;
@@ -103,7 +109,8 @@ public sealed class AutoMap<TKey, TValue> :
     /// </summary>
     /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnRemove(Action<TKey> callback) {
+    public Binding OnRemove(Action<TKey> callback)
+    {
       AddCallback((in RemoveBroadcast b) => callback(b.Key));
 
       return this;
@@ -114,7 +121,8 @@ public sealed class AutoMap<TKey, TValue> :
     /// </summary>
     /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnClear(Action callback) {
+    public Binding OnClear(Action callback)
+    {
       AddCallback((in ClearBroadcast b) => callback());
 
       return this;
@@ -144,14 +152,13 @@ public sealed class AutoMap<TKey, TValue> :
   /// Returns a struct enumerator that iterates through the dictionary keys
   /// efficiently without boxing. This can be used with foreach.
   /// </summary>
-  public KeyEnumerator Keys => new KeyEnumerator(_map.Keys.GetEnumerator());
+  public KeyEnumerator Keys => new(_map.Keys.GetEnumerator());
 
   /// <summary>
   /// Returns a struct enumerator that iterates through the dictionary values
   /// efficiently without boxing. This can be used with foreach.
   /// </summary>
-  public ValueEnumerator Values =>
-    new ValueEnumerator(_map.Values.GetEnumerator());
+  public ValueEnumerator Values => new(_map.Values.GetEnumerator());
 
   IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys =>
     (_map as IReadOnlyDictionary<TKey, TValue>).Keys;
@@ -172,7 +179,8 @@ public sealed class AutoMap<TKey, TValue> :
   /// </summary>
   /// <param name="key">The key of the value to get or set.</param>
   /// <returns>The value associated with the specified key.</returns>
-  public TValue this[TKey key] {
+  public TValue this[TKey key]
+  {
     get => _map[key];
     set => _subject.Perform(new UpdateOp(key, value));
   }
@@ -191,7 +199,8 @@ public sealed class AutoMap<TKey, TValue> :
   public AutoMap(
     IEnumerable<KeyValuePair<TKey, TValue>>? items = null,
     IEqualityComparer<TKey>? comparer = null
-  ) {
+  )
+  {
     _subject = new SyncSubject(this);
 
     _map = new Dictionary<TKey, TValue>(items ?? [], comparer);
@@ -200,7 +209,7 @@ public sealed class AutoMap<TKey, TValue> :
   #region AutoCollection
 
   /// <inheritdoc />
-  public Binding Bind() => new Binding(_subject);
+  public Binding Bind() => new(_subject);
 
   /// <inheritdoc />
   public void ClearBindings() => _subject.ClearBindings();
@@ -214,9 +223,8 @@ public sealed class AutoMap<TKey, TValue> :
 
   /// <inheritdoc />
 #nullable disable warnings // dumb netstandard stuff
-  public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) {
-    return _map.TryGetValue(key, out value);
-  }
+  public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) =>
+    _map.TryGetValue(key, out value);
 #nullable restore warnings // dumb netstandard stuff
 
   #endregion IReadOnlyDictionary
@@ -278,11 +286,13 @@ public sealed class AutoMap<TKey, TValue> :
 
   #region Operations
 
-  void IPerform<AddOp>.Perform(in AddOp op) {
+  void IPerform<AddOp>.Perform(in AddOp op)
+  {
     var key = op.Key;
     var value = op.Value;
 
-    if (_map.TryGetValue(key, out var existing)) {
+    if (_map.TryGetValue(key, out var existing))
+    {
       _map[key] = value;
 
       _subject.Broadcast(new UpdateBroadcast(key, existing, value));
@@ -294,11 +304,13 @@ public sealed class AutoMap<TKey, TValue> :
     _subject.Broadcast(new AddBroadcast(key, value));
   }
 
-  void IPerform<UpdateOp>.Perform(in UpdateOp op) {
+  void IPerform<UpdateOp>.Perform(in UpdateOp op)
+  {
     var key = op.Key;
     var value = op.Value;
 
-    if (!_map.TryGetValue(key, out var existing)) {
+    if (!_map.TryGetValue(key, out var existing))
+    {
       // perform an add instead
       _map.Add(key, value);
       _subject.Broadcast(new AddBroadcast(key, value));
@@ -310,24 +322,28 @@ public sealed class AutoMap<TKey, TValue> :
     _subject.Broadcast(new UpdateBroadcast(key, existing, value));
   }
 
-  void IPerform<RemoveOp>.Perform(in RemoveOp op) {
+  void IPerform<RemoveOp>.Perform(in RemoveOp op)
+  {
     var key = op.Key;
 
-    if (!_map.Remove(key, out var value)) {
+    if (!_map.Remove(key, out var value))
+    {
       return;
     }
 
     _subject.Broadcast(new RemoveBroadcast(key, value));
   }
 
-  void IPerform<RemoveMatchingOp>.Perform(in RemoveMatchingOp op) {
+  void IPerform<RemoveMatchingOp>.Perform(in RemoveMatchingOp op)
+  {
     var key = op.Key;
     var value = op.Value;
 
     if (
       !(_map as ICollection<KeyValuePair<TKey, TValue>>)
           .Contains(new KeyValuePair<TKey, TValue>(key, value))
-    ) {
+    )
+    {
       return;
     }
 
@@ -337,8 +353,10 @@ public sealed class AutoMap<TKey, TValue> :
     _subject.Broadcast(new RemoveBroadcast(key, existing));
   }
 
-  void IPerform<ClearOp>.Perform(in ClearOp op) {
-    if (_map.Count == 0) { return; }
+  void IPerform<ClearOp>.Perform(in ClearOp op)
+  {
+    if (_map.Count == 0)
+    { return; }
 
     _map.Clear();
 
@@ -355,7 +373,8 @@ public sealed class AutoMap<TKey, TValue> :
   /// A wrapper around <see cref="Dictionary{TKey, TValue}.Enumerator" /> that
   /// avoids boxing when used in a foreach loop.
   /// </summary>
-  public struct KeyEnumerator : IEnumerator<TKey> {
+  public struct KeyEnumerator : IEnumerator<TKey>
+  {
     private Dictionary<TKey, TValue>.KeyCollection.Enumerator
       _enumerator;
 
@@ -365,7 +384,8 @@ public sealed class AutoMap<TKey, TValue> :
     /// <param name="enumerator">The underlying enumerator.</param>
     public KeyEnumerator(
       Dictionary<TKey, TValue>.KeyCollection.Enumerator enumerator
-    ) {
+    )
+    {
       _enumerator = enumerator;
     }
 
@@ -395,7 +415,8 @@ public sealed class AutoMap<TKey, TValue> :
   /// A wrapper around <see cref="Dictionary{TKey, TValue}.Enumerator" /> that
   /// avoids boxing when used in a foreach loop.
   /// </summary>
-  public struct ValueEnumerator : IEnumerator<TValue> {
+  public struct ValueEnumerator : IEnumerator<TValue>
+  {
     private Dictionary<TKey, TValue>.ValueCollection.Enumerator
       _enumerator;
 
@@ -405,7 +426,8 @@ public sealed class AutoMap<TKey, TValue> :
     /// <param name="enumerator">The underlying enumerator.</param>
     public ValueEnumerator(
       Dictionary<TKey, TValue>.ValueCollection.Enumerator enumerator
-    ) {
+    )
+    {
       _enumerator = enumerator;
     }
 

@@ -6,13 +6,16 @@ using Moq;
 using Shouldly;
 using Xunit;
 
-public sealed class SyncBindingTest {
-  private sealed class TestBinding : SyncBinding {
+public sealed class SyncBindingTest
+{
+  private sealed class TestBinding : SyncBinding
+  {
     public TestBinding(ISyncSubject subject) : base(subject) { }
   }
 
   [Fact]
-  public void InitializesAndDisposes() {
+  public void InitializesAndDisposes()
+  {
     var subject = new Mock<ISyncSubject>();
     var binding = new TestBinding(subject.Object);
 
@@ -28,7 +31,8 @@ public sealed class SyncBindingTest {
   }
 
   [Fact]
-  public void InitializationFailsIfSubjectDisposed() {
+  public void InitializationFailsIfSubjectDisposed()
+  {
     var subject = new Mock<ISyncSubject>();
     subject.Setup(s => s.IsDisposed).Returns(true);
 
@@ -38,7 +42,8 @@ public sealed class SyncBindingTest {
   }
 
   [Fact]
-  public void AddCallbackThrowsIfDisposed() {
+  public void AddCallbackThrowsIfDisposed()
+  {
     var subject = new Mock<ISyncSubject>();
     var binding = new TestBinding(subject.Object);
     binding.Dispose();
@@ -49,7 +54,8 @@ public sealed class SyncBindingTest {
   }
 
   [Fact]
-  public void AddsMultipleCallbacksAndInvokesThemInOrder() {
+  public void AddsMultipleCallbacksAndInvokesThemInOrder()
+  {
     var subject = new Mock<ISyncSubject>();
     var binding = new TestBinding(subject.Object);
 
@@ -68,7 +74,8 @@ public sealed class SyncBindingTest {
   }
 
   [Fact]
-  public void InvokeCallbacksThrowsIfDisposed() {
+  public void InvokeCallbacksThrowsIfDisposed()
+  {
     var subject = new Mock<ISyncSubject>();
     var binding = new TestBinding(subject.Object);
     binding.Dispose();

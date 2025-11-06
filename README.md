@@ -39,43 +39,50 @@ Here's a very simple, real-world game development example that shows how to idio
 
 ```csharp
 // Enemy gameplay logic
-public sealed class Enemy : IDisposable {
+public sealed class Enemy : IDisposable
+{
   // mutable observable value private to this class
   private readonly AutoValue<int> _health = new(100);
 
   // immutable view of the value for outside subscribers
   public IAutoValue<int> Health => _health;
 
-  public void TakeDamage(int damage) {
+  public void TakeDamage(int damage)
+  {
     // enemy can't take more damage than it has health
     var appliedDamage = Math.Min(Math.Abs(damage), _health.Value);
     // bindings will be notified when this goes into effect
     _health.Value -= appliedDamage;
   }
 
-  public void Dispose() {
+  public void Dispose()
+  {
     // release references to any bindings to the health value so they can be GC'd
     _health.Dispose();
   }
 }
 
 // Enemy visualization logic
-public sealed class EnemyView : IDisposable {
+public sealed class EnemyView : IDisposable
+{
   public Enemy Enemy { get; }
   public AutoValue<int>.Binding Binding { get; }
 
-  public EnemyView(Enemy enemy) {
+  public EnemyView(Enemy enemy)
+  {
     Enemy = enemy;
     // listen to changes in the enemy's health
     Binding = enemy.Health.Bind();
     Binding.OnValue(OnHealthChanged);
   }
 
-  public void OnHealthChanged(int health) {
+  public void OnHealthChanged(int health)
+  {
     // update the health bar UI, etc.
   }
 
-  public void Dispose() {
+  public void Dispose()
+  {
     Binding.Dispose(); // stop listening
   }
 }
@@ -154,12 +161,14 @@ binding.OnValue(
 `AutoList<T>` is a reactive wrapper around `List<T>`. Bindings will be notified of any changes to the list for as long as they remain subscribed. `AutoList<T>` implements the various `IList<T>` interfaces, so you can generally use it just like a C# list.
 
 ```csharp
-var autoList = new AutoList<Animal>([
-  new Cat("Pickles"),
-  new Dog("Cookie"),
-  new Dog("Brisket"),
-  new Cat("Sven")
-]);
+var autoList = new AutoList<Animal>(
+  [
+    new Cat("Pickles"),
+    new Dog("Cookie"),
+    new Dog("Brisket"),
+    new Cat("Sven")
+  ]
+);
 
 using var binding = autoList.Bind();
 
@@ -213,7 +222,8 @@ Sometimes, you don't care about tracking a list of things by index. `AutoSet<T>`
 Bindings will be notified of any changes to the set for as long as they remain subscribed.
 
 ```csharp
-var autoSet = new AutoSet<Animal>(new HashSet<Animal> {
+var autoSet = new AutoSet<Animal>(new HashSet<Animal>
+{
   new Cat("Pickles"),
   new Dog("Cookie"),
   new Dog("Brisket"),
@@ -240,7 +250,8 @@ autoSet.Remove(new Cat("Pickles"));
 `AutoMap<TKey, TValue>` is a reactive wrapper around `Dictionary<TKey, TValue>`. Bindings will be notified of any changes to the dictionary for as long as they remain subscribed. `AutoMap<TKey, TValue>` implements the various `IDictionary<TKey, TValue>` interfaces, so you can generally use it just like a C# dictionary.
 
 ```csharp
-var autoMap = new AutoMap<string, Animal>(new Dictionary<string, Animal> {
+var autoMap = new AutoMap<string, Animal>(new Dictionary<string, Animal>
+{
   ["Pickles"] = new Cat("Pickles"),
   ["Cookie"] = new Dog("Cookie"),
   ["Brisket"] = new Dog("Brisket"),
@@ -336,11 +347,13 @@ Let's build our own implementation of `AutoValue<T>`.
 First, we'll want a read-only interface for our reactive primitive. All we need to do is inherit from `IAutoObject<TBinding>`, where `TBinding` is the type of binding we'll create for our AutoValue. We can stub that out, too.
 
 ```csharp
-public interface IAutoValue<T> : IAutoObject<AutoValue<T>.Binding> {
+public interface IAutoValue<T> : IAutoObject<AutoValue<T>.Binding>
+{
   T Value { get; }
 }
 
-public sealed class AutoValue<T> : IAutoValue<T> {
+public sealed class AutoValue<T> : IAutoValue<T>
+{
   public class Binding : SyncBinding {
     internal Binding(ISyncSubject subject) : base(subject) { }
   }
@@ -360,7 +373,8 @@ Let's go ahead and implement the required methods for the `IAutoObject` interfac
 You can define an atomic operation by creating a value type struct. It's really easy to use a one-line `readonly record struct` in C# for this, so that's what we'll do.
 
 ```csharp
-public sealed class AutoValue<T> : IAutoValue<T> {
+public sealed class AutoValue<T> : IAutoValue<T>
+{
     // Atomic operations
   private readonly record struct UpdateOp(T Value);
 
@@ -395,7 +409,8 @@ While we're at it, we'll go ahead and create a *broadcast*. A broadcast is also 
 
 ```csharp
 public sealed class AutoValue<T> : IAutoValue<T>,
-    IPerform<AutoValue<T>.UpdateOp> {
+    IPerform<AutoValue<T>.UpdateOp>
+{
   // Atomic operations
   private readonly record struct UpdateOp(T Value);
 
@@ -407,7 +422,8 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   // other members
 
   // Actually perform the atomic operation
-  void IPerform<UpdateOp>.Perform(in UpdateOp op) {
+  void IPerform<UpdateOp>.Perform(in UpdateOp op)
+  {
     if (_value != op.Value) {
       // only update if it's different
       return;
@@ -428,7 +444,8 @@ Now, the only thing left to do is make our `Binding` class allow the developer t
 ```csharp
 public sealed class AutoValue<T> : IAutoValue<T>,
     IPerform<AutoValue<T>.UpdateOp>,
-    IPerform<AutoValue<T>.SyncOp> {
+    IPerform<AutoValue<T>.SyncOp>
+{
   // Atomic operations
   private readonly record struct UpdateOp(T Value);
   private readonly record struct SyncOp(Action<T> Callback);
@@ -436,10 +453,12 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   // Broadcasts
   public readonly record struct UpdateBroadcast(T Value);
 
-  public class Binding : SyncBinding {
+  public class Binding : SyncBinding
+  {
     internal Binding(ISyncSubject subject) : base(subject) { }
 
-    public Binding OnValue(Action<T> callback) {
+    public Binding OnValue(Action<T> callback)
+    {
       AddCallback((in UpdateBroadcast broadcast) => callback(broadcast.Value));
 
       // invoke binding as soon as possible after it's added to give it the

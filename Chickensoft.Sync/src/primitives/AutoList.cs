@@ -3,11 +3,13 @@ namespace Chickensoft.Sync.Primitives;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>A readonly reference to an observable list.</summary>
 /// <typeparam name="T">Item type.</typeparam>
 public interface IAutoList<T> :
-    IAutoObject<AutoList<T>.Binding>, IReadOnlyList<T> {
+    IAutoObject<AutoList<T>.Binding>, IReadOnlyList<T>
+{
   /// <summary>
   /// Equality comparer used to determine item equality.
   /// </summary>
@@ -54,7 +56,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     IPerform<AutoList<T>.UpdateOp>,
     IPerform<AutoList<T>.RemoveOp>,
     IPerform<AutoList<T>.RemoveByItem>,
-    IPerform<AutoList<T>.ClearOp> {
+    IPerform<AutoList<T>.ClearOp>
+{
   // Atomic operations
   private readonly record struct AddOp(T Item);
   private readonly record struct InsertOp(int Index, T Item);
@@ -74,7 +77,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
   /// <summary>
   /// A binding to an <see cref="AutoList{T}" />.
   /// </summary>
-  public sealed class Binding : SyncBinding {
+  public sealed class Binding : SyncBinding
+  {
     internal Binding(ISyncSubject subject) : base(subject) { }
 
     /// <summary>
@@ -82,7 +86,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// </summary>
     /// <param name="callback">Callback which receives the item.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnAdd(Action<T> callback) {
+    public Binding OnAdd(Action<T> callback)
+    {
       AddCallback((in AddBroadcast broadcast) => callback(broadcast.Item));
 
       return this;
@@ -95,8 +100,16 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// <param name="callback">Callback which receives the item.</param>
     /// <typeparam name="TDerived">Subtype of item to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnAdd<TDerived>(Action<TDerived> callback)
-        where TDerived : T {
+        where TDerived : T
+    {
       AddCallback(
         (in AddBroadcast broadcast) => callback((TDerived)broadcast.Item!),
         (in AddBroadcast broadcast) => broadcast.Item is TDerived
@@ -111,7 +124,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// <param name="callback">Callback which receives the item and its index.
     /// </param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnAdd(Action<T, int> callback) {
+    public Binding OnAdd(Action<T, int> callback)
+    {
       AddCallback(
         (in AddBroadcast broadcast) => callback(broadcast.Item, broadcast.Index)
       );
@@ -127,12 +141,19 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// </param>
     /// <typeparam name="TDerived">Subtype of item to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnAdd<TDerived>(Action<TDerived, int> callback)
-        where TDerived : T {
+        where TDerived : T
+    {
       AddCallback(
-        (in AddBroadcast broadcast) => callback(
-          (TDerived)broadcast.Item!, broadcast.Index
-        ),
+        (in AddBroadcast broadcast) =>
+          callback((TDerived)broadcast.Item!, broadcast.Index),
         (in AddBroadcast broadcast) => broadcast.Item is TDerived
       );
 
@@ -145,7 +166,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// <param name="callback">Callback which receives the previous item and
     /// the next item.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnUpdate(Action<T, T> callback) {
+    public Binding OnUpdate(Action<T, T> callback)
+    {
       AddCallback(
         (in UpdateBroadcast broadcast) =>
           callback(broadcast.Previous, broadcast.Item)
@@ -163,9 +185,18 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// <param name="callback">Callback which receives the previous item and
     /// the next item.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnUpdate<TPrevious, TValue>(
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
+    public Binding OnUpdate<TPrevious, TValue>
+    (
       Action<TPrevious, TValue> callback
-    ) where TPrevious : T where TValue : T {
+    ) where TPrevious : T where TValue : T
+    {
       AddCallback(
         (in UpdateBroadcast broadcast) =>
           callback((TPrevious)broadcast.Previous!, (TValue)broadcast.Item!),
@@ -183,7 +214,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// <param name="callback">Callback which receives the previous item,
     /// the next item, and the index of the item.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnUpdate(Action<T, T, int> callback) {
+    public Binding OnUpdate(Action<T, T, int> callback)
+    {
       AddCallback(
         (in UpdateBroadcast broadcast) =>
           callback(broadcast.Previous, broadcast.Item, broadcast.Index)
@@ -201,9 +233,18 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// <param name="callback">Callback which receives the previous item,
     /// the next item, and the index of the item.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnUpdate<TPrevious, TValue>(
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
+    public Binding OnUpdate<TPrevious, TValue>
+    (
       Action<TPrevious, TValue, int> callback
-    ) where TPrevious : T where TValue : T {
+    ) where TPrevious : T where TValue : T
+    {
       AddCallback(
         (in UpdateBroadcast broadcast) =>
           callback(
@@ -225,7 +266,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// </summary>
     /// <param name="callback">Callback which receives the removed item.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnRemove(Action<T> callback) {
+    public Binding OnRemove(Action<T> callback)
+    {
       AddCallback(
         (in RemoveBroadcast broadcast) => callback(broadcast.Item)
       );
@@ -240,8 +282,16 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// <param name="callback">Callback which receives the removed item.</param>
     /// <typeparam name="TDerived">Subtype of item to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnRemove<TDerived>(Action<TDerived> callback)
-        where TDerived : T {
+        where TDerived : T
+    {
       AddCallback(
         (in RemoveBroadcast broadcast) => callback((TDerived)broadcast.Item!),
         (in RemoveBroadcast broadcast) => broadcast.Item is TDerived
@@ -257,7 +307,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// <param name="callback">Callback which receives the removed item and
     /// its index.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnRemove(Action<T, int> callback) {
+    public Binding OnRemove(Action<T, int> callback)
+    {
       AddCallback(
         (in RemoveBroadcast broadcast) =>
           callback(broadcast.Item, broadcast.Index)
@@ -274,8 +325,16 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// its index.</param>
     /// <typeparam name="TDerived">Subtype of item to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnRemove<TDerived>(Action<TDerived, int> callback)
-        where TDerived : T {
+        where TDerived : T
+    {
       AddCallback(
         (in RemoveBroadcast broadcast) =>
           callback((TDerived)broadcast.Item!, broadcast.Index),
@@ -290,7 +349,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     /// </summary>
     /// <param name="callback">Callback.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnClear(Action callback) {
+    public Binding OnClear(Action callback)
+    {
       AddCallback((in ClearBroadcast _) => callback());
 
       return this;
@@ -320,7 +380,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
   public AutoList(
     IEnumerable<T>? items = null,
     IEqualityComparer<T>? comparer = null
-  ) {
+  )
+  {
     _subject = new(this);
     Comparer = comparer ?? EqualityComparer<T>.Default;
     _list = items is not null
@@ -331,7 +392,7 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
   #region AutoCollection
 
   /// <inheritdoc />
-  public Binding Bind() => new Binding(_subject);
+  public Binding Bind() => new(_subject);
 
   /// <inheritdoc />
   public void ClearBindings() => _subject.ClearBindings();
@@ -341,7 +402,8 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
   #region IList<T>
 
   /// <inheritdoc />
-  public T this[int index] {
+  public T this[int index]
+  {
     get => _list[index];
     set => _subject.Perform(new UpdateOp(index, value));
   }
@@ -415,9 +477,12 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
 
   #endregion Enumeration
 
-  private int IndexOfWithComparer(T item) {
-    for (var i = 0; i < _list.Count; i++) {
-      if (Comparer.Equals(_list[i], item)) {
+  private int IndexOfWithComparer(T item)
+  {
+    for (var i = 0; i < _list.Count; i++)
+    {
+      if (Comparer.Equals(_list[i], item))
+      {
         return i;
       }
     }
@@ -427,17 +492,20 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
 
   #region Operations
 
-  void IPerform<AddOp>.Perform(in AddOp op) {
+  void IPerform<AddOp>.Perform(in AddOp op)
+  {
     var item = op.Item;
     _list.Add(item);
     _subject.Broadcast(new AddBroadcast(item, _list.Count - 1));
   }
 
-  void IPerform<InsertOp>.Perform(in InsertOp op) {
+  void IPerform<InsertOp>.Perform(in InsertOp op)
+  {
     var index = op.Index;
     var item = op.Item;
 
-    if (index < 0 || index > _list.Count) {
+    if (index < 0 || index > _list.Count)
+    {
       throw new ArgumentOutOfRangeException(
         nameof(index),
         index,
@@ -449,11 +517,13 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     _subject.Broadcast(new AddBroadcast(item, index));
   }
 
-  void IPerform<UpdateOp>.Perform(in UpdateOp op) {
+  void IPerform<UpdateOp>.Perform(in UpdateOp op)
+  {
     var index = op.Index;
     var item = op.Item;
 
-    if (index < 0 || index >= _list.Count) {
+    if (index < 0 || index >= _list.Count)
+    {
       throw new ArgumentOutOfRangeException(
         nameof(index),
         index,
@@ -463,16 +533,19 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
 
     var previous = _list[index];
 
-    if (!Comparer.Equals(previous, item)) {
+    if (!Comparer.Equals(previous, item))
+    {
       _list[index] = item;
       _subject.Broadcast(new UpdateBroadcast(previous, item, index));
     }
   }
 
-  void IPerform<RemoveOp>.Perform(in RemoveOp op) {
+  void IPerform<RemoveOp>.Perform(in RemoveOp op)
+  {
     var index = op.Index;
 
-    if (index < 0 || index >= _list.Count) {
+    if (index < 0 || index >= _list.Count)
+    {
       throw new ArgumentOutOfRangeException(
         nameof(index),
         index,
@@ -486,18 +559,22 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     _subject.Broadcast(new RemoveBroadcast(item, index));
   }
 
-  void IPerform<RemoveByItem>.Perform(in RemoveByItem op) {
+  void IPerform<RemoveByItem>.Perform(in RemoveByItem op)
+  {
     var item = op.Item;
     var index = IndexOfWithComparer(item);
 
-    if (index < 0) { return; }
+    if (index < 0)
+    { return; }
 
     _list.RemoveAt(index);
     _subject.Broadcast(new RemoveBroadcast(item, index));
   }
 
-  void IPerform<ClearOp>.Perform(in ClearOp op) {
-    if (_list.Count == 0) { return; }
+  void IPerform<ClearOp>.Perform(in ClearOp op)
+  {
+    if (_list.Count == 0)
+    { return; }
 
     _list.Clear();
     _subject.Broadcast(new ClearBroadcast());

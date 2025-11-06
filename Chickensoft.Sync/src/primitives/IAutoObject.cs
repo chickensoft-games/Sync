@@ -3,7 +3,9 @@ namespace Chickensoft.Sync.Primitives;
 using System;
 
 /// <summary>An observable object.</summary>
-public interface IAutoObject<TBinding> : IDisposable where TBinding : SyncBinding {
+public interface IAutoObject<TBinding> : IDisposable
+  where TBinding : SyncBinding
+{
   /// <summary>
   /// Creates a new binding that listens to changes in the object. The
   /// binding is automatically setup to observe this object.

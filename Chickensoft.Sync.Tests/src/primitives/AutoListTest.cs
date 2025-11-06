@@ -6,21 +6,24 @@ using Chickensoft.Sync.Primitives;
 using Shouldly;
 using Xunit;
 
-public sealed class AutoListTest {
+public sealed class AutoListTest
+{
   [Fact]
-  public void Initializes() {
+  public void Initializes()
+  {
     var list = new AutoList<int>();
     list.Count.ShouldBe(0);
     list.IsReadOnly.ShouldBeFalse();
   }
 
   [Fact]
-  public void AddBroadcastsItemAndIndex() {
+  public void AddBroadcastsItemAndIndex()
+  {
     var list = new AutoList<int>();
     var log = new List<string>();
     using var binding = list.Bind();
 
-    binding.OnAdd((int item, int index) => log.Add($"add {item} @ {index}"));
+    binding.OnAdd((item, index) => log.Add($"add {item} @ {index}"));
 
     list.Add(42);
 
@@ -30,12 +33,13 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void InsertBroadcastsCorrectIndex() {
+  public void InsertBroadcastsCorrectIndex()
+  {
     var list = new AutoList<int>([10, 30]);
     var log = new List<string>();
     using var binding = list.Bind();
 
-    binding.OnAdd((int item, int index) => log.Add($"add {item} @ {index}"));
+    binding.OnAdd((item, index) => log.Add($"add {item} @ {index}"));
 
     list.Insert(1, 20);
 
@@ -44,20 +48,22 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void InsertOutOfBounds() {
+  public void InsertOutOfBounds()
+  {
     var list = new AutoList<int>([1, 2, 3]);
     Should.Throw<ArgumentOutOfRangeException>(() => list.Insert(-1, 0));
     Should.Throw<ArgumentOutOfRangeException>(() => list.Insert(4, 0));
   }
 
   [Fact]
-  public void IndexerUpdateBroadcasts() {
+  public void IndexerUpdateBroadcasts()
+  {
     var list = new AutoList<string>(["a"]);
     var log = new List<string>();
     using var binding = list.Bind();
 
     binding.OnUpdate(
-      (string prev, string next, int idx) => log.Add($"{prev}->{next} @ {idx}")
+      (prev, next, idx) => log.Add($"{prev}->{next} @ {idx}")
     );
 
     list[0] = "b";
@@ -67,14 +73,15 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void IndexerDoesNotUpdateWhenComparerSaysEqual() {
+  public void IndexerDoesNotUpdateWhenComparerSaysEqual()
+  {
     var list = new AutoList<string>(
       ["A"], comparer: StringComparer.OrdinalIgnoreCase
     );
     var called = false;
     using var binding = list.Bind();
 
-    binding.OnUpdate((string _, string __) => called = true);
+    binding.OnUpdate((_, __) => called = true);
 
     list[0] = "a";
 
@@ -83,13 +90,14 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void RemoveAt_BroadcastsItemAndIndex() {
+  public void RemoveAt_BroadcastsItemAndIndex()
+  {
     var list = new AutoList<int>([1, 2, 3]);
     var log = new List<string>();
     using var binding = list.Bind();
 
     binding.OnRemove(
-      (int item, int index) => log.Add($"remove {item} @ {index}")
+      (item, index) => log.Add($"remove {item} @ {index}")
     );
 
     list.RemoveAt(1);
@@ -99,14 +107,16 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void RemoveOutOfBounds() {
+  public void RemoveOutOfBounds()
+  {
     var list = new AutoList<int>([1]);
     Should.Throw<ArgumentOutOfRangeException>(() => list.RemoveAt(-1));
     Should.Throw<ArgumentOutOfRangeException>(() => list.RemoveAt(1));
   }
 
   [Fact]
-  public void Clear() {
+  public void Clear()
+  {
     var list = new AutoList<int>();
     var calls = 0;
     list.Bind().OnClear(() => calls++);
@@ -121,7 +131,8 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void ContainsAndIndexOfRespectComparer() {
+  public void ContainsAndIndexOfRespectComparer()
+  {
     var list = new AutoList<string>(
       ["Aardvark", "Bear"], StringComparer.OrdinalIgnoreCase
     );
@@ -130,7 +141,8 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void CopyToAndEnumerationPreserveOrder() {
+  public void CopyToAndEnumerationPreserveOrder()
+  {
     var list = new AutoList<int>([5, 6, 7]);
     var arr = new int[5];
     list.CopyTo(arr, 1);
@@ -138,7 +150,8 @@ public sealed class AutoListTest {
 
     var enumerated = new List<int>();
 
-    foreach (var x in list) {
+    foreach (var x in list)
+    {
       enumerated.Add(x);
     }
 
@@ -146,7 +159,8 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void BindingRespectsDerivedTypes() {
+  public void BindingRespectsDerivedTypes()
+  {
     var list = new AutoList<Animal>();
     var log = new List<string>();
     list.Bind()
@@ -207,18 +221,21 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void OperationsDefer() {
+  public void OperationsDefer()
+  {
     var list = new AutoList<int>();
     var log = new List<string>();
     using var binding1 = list.Bind();
-    binding1.OnAdd((int value) => {
+    binding1.OnAdd(value =>
+    {
       log.Add($"b1 {value}");
-      if (value == 1) {
+      if (value == 1)
+      {
         list.Add(2); // schedule another one
       }
     });
     using var binding2 = list.Bind();
-    binding2.OnAdd((int value) => log.Add($"b2 {value}"));
+    binding2.OnAdd(value => log.Add($"b2 {value}"));
 
     list.Add(1);
 
@@ -226,19 +243,22 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void ClearBindingsDefers() {
+  public void ClearBindingsDefers()
+  {
     var list = new AutoList<int>();
     var log = new List<string>();
 
     using var binding1 = list.Bind();
-    binding1.OnAdd((int value) => {
+    binding1.OnAdd(value =>
+    {
       log.Add($"b1 {value}");
-      if (value == 1) {
+      if (value == 1)
+      {
         list.ClearBindings(); // should not affect current broadcast
       }
     });
     using var binding2 = list.Bind();
-    binding2.OnAdd((int v) => log.Add($"b2 {v}"));
+    binding2.OnAdd(v => log.Add($"b2 {v}"));
 
     list.Add(1); // both bindings should see this
     list.Add(2); // no bindings should see this
@@ -247,7 +267,8 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void RemoveByItem() {
+  public void RemoveByItem()
+  {
     var list = new AutoList<int>([1, 2, 3]);
     var log = new List<string>();
     list.Remove(2);
@@ -260,38 +281,44 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void UpdateThrowsIfIndexOutOfBounds() {
+  public void UpdateThrowsIfIndexOutOfBounds()
+  {
     var list = new AutoList<int>([1, 2, 3]);
     Should.Throw<ArgumentOutOfRangeException>(() => list[3] = 10);
     Should.Throw<ArgumentOutOfRangeException>(() => list[-1] = 10);
   }
 
   [Fact]
-  public void ICollectionRemoveIsNotSupported() {
+  public void ICollectionRemoveIsNotSupported()
+  {
     var list = new AutoList<int>([1, 2, 3]);
     var collection = (ICollection<int>)list;
     Should.Throw<NotSupportedException>(() => collection.Remove(2));
   }
 
   [Fact]
-  public void IndexerSetOutOfBoundsThrows() {
+  public void IndexerSetOutOfBoundsThrows()
+  {
     var list = new AutoList<int>();
     Should.Throw<ArgumentOutOfRangeException>(() => list[0] = 10);
   }
 
   [Fact]
-  public void IndexOfReturnsNeg1ForMissingItem() {
+  public void IndexOfReturnsNeg1ForMissingItem()
+  {
     var list = new AutoList<string>(["a", "b", "c"]);
     list.IndexOf("x").ShouldBe(-1);
   }
 
   [Fact]
-  public void ProvidesBoxedEnumerator() {
+  public void ProvidesBoxedEnumerator()
+  {
     IEnumerable<int> list = new AutoList<int>([1, 2, 3]);
     var enumerator = list.GetEnumerator();
     var items = new List<int>();
 
-    while (enumerator.MoveNext()) {
+    while (enumerator.MoveNext())
+    {
       items.Add(enumerator.Current);
     }
 
@@ -301,7 +328,8 @@ public sealed class AutoListTest {
   }
 
   [Fact]
-  public void Disposes() {
+  public void Disposes()
+  {
     var list = new AutoList<int>();
 
     list.Dispose();

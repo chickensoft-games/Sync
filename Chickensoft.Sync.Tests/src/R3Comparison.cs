@@ -3,7 +3,8 @@ namespace Chickensoft.Sync.Tests;
 using R3;
 using Shouldly;
 
-public sealed class R3Comparison {
+public sealed class R3Comparison
+{
   // This test fails because R3's ReactiveProperty immediately re-enters handlers
   // when a value is mutated inside a handler.
   // Chickensoft.Sync does not do this. However, R3 outperforms it, likely because
@@ -11,15 +12,18 @@ public sealed class R3Comparison {
 
 #pragma warning disable xUnit1004 // Test methods should not be skipped
   [Fact(Skip = "ReactiveProperty in R3 does not protect against reentrancy.")]
-  public void ReactivePropertyProtectsAgainstReEntrancy() {
+  public void ReactivePropertyProtectsAgainstReEntrancy()
+  {
     var rp = new ReactiveProperty<int>(0);
     var events = new List<int>();
 
     var inCallback = false;
     var reentered = false;
 
-    rp.Subscribe(x => {
-      if (inCallback) {
+    rp.Subscribe(x =>
+    {
+      if (inCallback)
+      {
         reentered = true; // signals immediate (re-entrant) delivery
       }
 
@@ -27,7 +31,8 @@ public sealed class R3Comparison {
 
       events.Add(x);
 
-      if (x == 1) {
+      if (x == 1)
+      {
         rp.Value = 2; // attempt re-entrant set
       }
 

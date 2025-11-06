@@ -2,8 +2,10 @@ namespace Chickensoft.Sync.Tests;
 
 using Chickensoft.Sync.Primitives;
 
-public class AutoValueSimpleExample {
-  public void Example() {
+public class AutoValueSimpleExample
+{
+  public void Example()
+  {
     // hang onto the value for as long as you want to change it, then call Dispose()
     // when you're done with it
     var autoValue = new AutoValue<Animal>(new Cat("Pickles"));
@@ -31,49 +33,53 @@ public class AutoValueSimpleExample {
 }
 
 // Enemy gameplay logic
-public sealed class Enemy : IDisposable {
+public sealed class Enemy : IDisposable
+{
   // mutable observable value private to this value
   private readonly AutoValue<int> _health = new(100);
 
   // immutable view of the value for outside subscribers
   public IAutoValue<int> Health => _health;
 
-  public void TakeDamage(int damage) {
+  public void TakeDamage(int damage)
+  {
     // enemy can't take more damage than it has health
     var appliedDamage = Math.Min(Math.Abs(damage), _health.Value);
     // bindings will be notified when this goes into effect
     _health.Value -= appliedDamage;
   }
 
-  public void Dispose() {
+  public void Dispose() =>
     // release references to any bindings to the health value so they can be GC'd
     _health.Dispose();
-  }
 }
 
 // Enemy visualization logic
-public sealed class EnemyView : IDisposable {
+public sealed class EnemyView : IDisposable
+{
   public Enemy Enemy { get; }
   public AutoValue<int>.Binding Binding { get; }
 
-  public EnemyView(Enemy enemy) {
+  public EnemyView(Enemy enemy)
+  {
     Enemy = enemy;
     // listen to changes in the enemy's health
     Binding = enemy.Health.Bind();
     Binding.OnValue(OnHealthChanged);
   }
 
-  public void OnHealthChanged(int health) {
+  public void OnHealthChanged(int health)
+  {
     // update the health bar UI, etc.
   }
 
-  public void Dispose() {
-    Binding.Dispose(); // stop listening
-  }
+  public void Dispose() => Binding.Dispose(); // stop listening
 }
 
-public class AutoListExample() {
-  public void Example() {
+public class AutoListExample()
+{
+  public void Example()
+  {
     var autoList = new AutoList<Animal>([
       new Cat("Pickles"),
       new Dog("Cookie"),
@@ -120,8 +126,10 @@ public class AutoListExample() {
   }
 }
 
-public class AutoSetExample {
-  public void Example() {
+public class AutoSetExample
+{
+  public void Example()
+  {
     var autoSet = new AutoSet<Animal>(new HashSet<Animal> {
       new Cat("Pickles"),
       new Dog("Cookie"),
@@ -145,9 +153,12 @@ public class AutoSetExample {
   }
 }
 
-public class AutoMapExample {
-  public void Example() {
-    var autoMap = new AutoMap<string, Animal>(new Dictionary<string, Animal> {
+public class AutoMapExample
+{
+  public void Example()
+  {
+    var autoMap = new AutoMap<string, Animal>(new Dictionary<string, Animal>
+    {
       ["Pickles"] = new Cat("Pickles"),
       ["Cookie"] = new Dog("Cookie"),
       ["Brisket"] = new Dog("Brisket"),

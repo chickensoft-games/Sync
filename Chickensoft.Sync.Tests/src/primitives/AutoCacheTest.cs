@@ -3,19 +3,22 @@ namespace Chickensoft.Sync.Tests.Primitives;
 using Shouldly;
 using Sync.Primitives;
 
-public sealed class AutoCacheTest {
+public sealed class AutoCacheTest
+{
   private readonly record struct TestValue(int Value);
   private sealed record TestRef(int Value);
 
   [Fact]
-  public void Initializes() {
+  public void Initializes()
+  {
     var cache = new AutoCache();
     cache.Count.ShouldBe(0);
     cache.TryGetValue<TestValue>(out _).ShouldBeFalse();
   }
 
   [Fact]
-  public void BroadcastsChanges() {
+  public void BroadcastsChanges()
+  {
     var cache = new AutoCache();
 
     var values = new List<object>();
@@ -41,7 +44,8 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
-  public void BindingRespectsDerivedTypes() {
+  public void BindingRespectsDerivedTypes()
+  {
     var boots = new Dog("Boots");
     var cookie = new Poodle("Cookie");
     var brisket = new Poodle("Brisket");
@@ -86,7 +90,8 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
-  public void TryGetValueReturnsFalseWhenCleared() {
+  public void TryGetValueReturnsFalseWhenCleared()
+  {
     var boots = new Dog("Boots");
 
     var autoCache = new AutoCache();
@@ -105,7 +110,8 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
-  public void TryGetValueReturnsPushedType() {
+  public void TryGetValueReturnsPushedType()
+  {
     var boots = new Dog("Boots");
 
     var autoCache = new AutoCache();
@@ -122,7 +128,8 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
-  public void TryGetValueReturnsLatestValue() {
+  public void TryGetValueReturnsLatestValue()
+  {
     var cache = new AutoCache();
 
     cache.Update(new TestValue(5));
@@ -134,7 +141,8 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
-  public void TryGetValueReturnsLatestRef() {
+  public void TryGetValueReturnsLatestRef()
+  {
     var autoCache = new AutoCache();
 
     autoCache.Update(new TestRef(3));
@@ -148,7 +156,8 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
-  public void ClearsBindings() {
+  public void ClearsBindings()
+  {
     var autoCache = new AutoCache();
     var values = new List<object>();
 
@@ -170,7 +179,8 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
-  public void ClearBroadcasts() {
+  public void ClearBroadcasts()
+  {
     var autoCache = new AutoCache();
 
     autoCache.Update(1);
@@ -188,7 +198,8 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
-  public void ClearSetsCountToZero() {
+  public void ClearSetsCountToZero()
+  {
     var autoCache = new AutoCache();
     var boots = new Dog("Boots");
     var cookie = new Poodle("Cookie");
@@ -211,7 +222,8 @@ public sealed class AutoCacheTest {
   }
 
   [Fact]
-  public void Disposes() {
+  public void Disposes()
+  {
     var cache = new AutoCache();
 
     cache.Dispose();

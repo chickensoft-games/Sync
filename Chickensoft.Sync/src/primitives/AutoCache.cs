@@ -7,16 +7,20 @@ using System.Runtime.CompilerServices;
 using Collections;
 using Sync;
 
-internal abstract class CachedValue {
+internal abstract class CachedValue
+{
   public abstract void Clear();
 }
 
-internal class CachedValue<T> : CachedValue {
+internal class CachedValue<T> : CachedValue
+{
   private T? _value;
 
-  public T? Value {
+  public T? Value
+  {
     get => _value;
-    set {
+    set
+    {
       _value = value;
       HasValue = true;
     }
@@ -24,7 +28,8 @@ internal class CachedValue<T> : CachedValue {
 
   public bool HasValue { get; private set; }
 
-  public override void Clear() {
+  public override void Clear()
+  {
     Value = default;
     HasValue = false;
   }
@@ -36,11 +41,13 @@ internal class CachedValue<T> : CachedValue {
 /// </para>
 /// <para>
 /// On update, it broadcasts to all bindings and stores the value based on
-/// the type given. You can then use the method <see cref="TryGetValue{T}(out T)"/>
-/// to get the last value updated of type `T`
+/// the type given. You can then use the method
+/// <see cref="TryGetValue{T}(out T)"/> to get the last value updated of type
+/// `T`
 /// </para>
 /// </summary>
-public interface IAutoCache : IAutoObject<AutoCache.Binding> {
+public interface IAutoCache : IAutoObject<AutoCache.Binding>
+{
   /// <summary>
   /// Attempts to get the last value which was pushed to the cache of a specific
   /// reference or value type.
@@ -59,7 +66,8 @@ public interface IAutoCache : IAutoObject<AutoCache.Binding> {
 /// <inheritdoc cref="IAutoCache"/>
 public sealed class AutoCache : IAutoCache,
   IPerform<AutoCache.PopOp>,
-  IPerform<AutoCache.ClearOp> {
+  IPerform<AutoCache.ClearOp>
+{
   // Atomic operations
   private readonly record struct PopOp;
   private readonly record struct ClearOp;
@@ -71,7 +79,8 @@ public sealed class AutoCache : IAutoCache,
   /// <summary>
   /// A binding to an <see cref="AutoCache"/>.
   /// </summary>
-  public class Binding : SyncBinding {
+  public class Binding : SyncBinding
+  {
     internal Binding(ISyncSubject subject) : base(subject) { }
 
     /// <summary>
@@ -84,6 +93,13 @@ public sealed class AutoCache : IAutoCache,
     /// <typeparam name="T">Value Type to Listen For</typeparam>
     /// <returns>This binding (for chaining).</returns>
     /// <seealso cref="OnUpdate{T}(Action{T}, Func{T, bool}?)"/>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnUpdate<T>(
       Callback<T> callback, Func<T, bool>? condition = null) where T : struct
     {
@@ -107,6 +123,13 @@ public sealed class AutoCache : IAutoCache,
     /// <typeparam name="T">Ref Type to Listen For</typeparam>
     /// <returns>This binding (for chaining).</returns>
     /// <seealso cref="OnUpdate{T}(Callback{T}, Func{T, bool}?)"/>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
     public Binding OnUpdate<T>(
       Action<T> callback, Func<T, bool>? condition = null) where T : class
     {
@@ -125,7 +148,8 @@ public sealed class AutoCache : IAutoCache,
     /// </summary>
     /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    public Binding OnClear(Action callback) {
+    public Binding OnClear(Action callback)
+    {
       AddCallback((in ClearBroadcast b) => callback());
 
       return this;
@@ -147,7 +171,8 @@ public sealed class AutoCache : IAutoCache,
   /// <inheritdoc cref="AutoCache"/>
   /// </para>
   /// </summary>
-  public AutoCache() {
+  public AutoCache()
+  {
     _subject = new SyncSubject(this);
     _passthrough = new Passthrough(this);
     _boxlessQueue = new BoxlessQueue();
@@ -156,13 +181,14 @@ public sealed class AutoCache : IAutoCache,
   }
 
   /// <inheritdoc />
-  public Binding Bind() => new Binding(_subject);
+  public Binding Bind() => new(_subject);
 
   /// <inheritdoc />
   public void ClearBindings() => _subject.ClearBindings();
 
   /// <inheritdoc />
-  public void Dispose() {
+  public void Dispose()
+  {
     _subject.Dispose();
     _refDict.Clear();
     _valueDict.Clear();
@@ -171,15 +197,25 @@ public sealed class AutoCache : IAutoCache,
   /// <inheritdoc />
   /// <returns>true if the <see cref="AutoCache"/> contains an element with the
   /// specified type; otherwise, false.</returns>
-  public bool TryGetValue<T>([MaybeNullWhen(false)] out T value) where T : notnull {
+  public bool TryGetValue<T>([MaybeNullWhen(false)] out T value)
+    where T : notnull
+  {
     value = default;
-    if (_valueDict.TryGetValue(typeof(T), out var val) &&
-        val is CachedValue<T> { HasValue: true } derivedValue) {
+    if
+    (
+      _valueDict.TryGetValue(typeof(T), out var val) &&
+      val is CachedValue<T> { HasValue: true } derivedValue
+    )
+    {
       value = derivedValue.Value!;
-	    return true;
+      return true;
     }
-    if (_refDict.TryGetValue(typeof(T), out var refVal) &&
-        refVal is T derivedRef) {
+    if
+    (
+      _refDict.TryGetValue(typeof(T), out var refVal) &&
+      refVal is T derivedRef
+    )
+    {
       value = derivedRef;
       return true;
     }
@@ -199,20 +235,25 @@ public sealed class AutoCache : IAutoCache,
   /// </para>
   /// </summary>
   /// <remarks>
-  /// Always remember that pushing a struct as an interface or object will box the value
+  /// Always remember that pushing a struct as an interface or object will box
+  /// the value
   /// </remarks>
   /// <seealso cref="Update{T}(T)"/>
   /// <param name="value">Value to update with</param>
   /// <typeparam name="T">Value Type</typeparam>
-  public void Update<T>(in T value) where T : struct {
-    if (_valueDict.TryGetValue(typeof(T), out var cachedValue)) {
+  public void Update<T>(in T value) where T : struct
+  {
+    if (_valueDict.TryGetValue(typeof(T), out var cachedValue))
+    {
       var cachedValueCast = (CachedValue<T>)cachedValue;
-      if (!cachedValueCast.HasValue) {
+      if (!cachedValueCast.HasValue)
+      {
         _cacheCount++;
       }
       cachedValueCast.Value = value;
     }
-    else {
+    else
+    {
       var newCachedValue = new CachedValue<T>();
       _valueDict[typeof(T)] = newCachedValue;
       newCachedValue.Value = value;
@@ -235,31 +276,34 @@ public sealed class AutoCache : IAutoCache,
   /// I.e., Update&lt;BaseType&gt;(new DerivedType())
   /// </para>
   /// <remarks>
-  /// Always remember that pushing a struct as an interface or object will box the value
+  /// Always remember that pushing a struct as an interface or object will box
+  /// the value
   /// </remarks>
   /// </summary>
   /// <seealso cref="Update{T}(in T)"/>
   /// <param name="value">Value to update with</param>
   /// <typeparam name="T">Reference Type</typeparam>
-  public void Update<T>(T value) where T : class {
+  public void Update<T>(T value) where T : class
+  {
     _refDict[typeof(T)] = value;
     _boxlessQueue.Enqueue(new RefValue(value));
     _subject.Perform(new PopOp());
   }
 
-  private void Handle<T>(in T value) where T : struct {
+  private void Handle<T>(in T value) where T : struct =>
     _subject.Broadcast(value); // invoke callbacks registered for this value
-  }
 
-  void IPerform<PopOp>.Perform(in PopOp op) {
+  void IPerform<PopOp>.Perform(in PopOp op) =>
     _boxlessQueue.Dequeue(_passthrough);
-  }
 
-  void IPerform<ClearOp>.Perform(in ClearOp op) {
-    if (Count == 0) { return; }
+  void IPerform<ClearOp>.Perform(in ClearOp op)
+  {
+    if (Count == 0)
+    { return; }
 
     _refDict.Clear();
-    foreach (var (_, value) in _valueDict) {
+    foreach (var (_, value) in _valueDict)
+    {
       value.Clear();
     }
     _cacheCount = 0;
@@ -269,7 +313,8 @@ public sealed class AutoCache : IAutoCache,
 
 
   /// <summary>
-  /// The combined count of all reference types and value types stored in the cache.
+  /// The combined count of all reference types and value types stored in the
+  /// cache.
   /// </summary>
   public int Count => _refDict.Count + _cacheCount;
 
@@ -278,10 +323,12 @@ public sealed class AutoCache : IAutoCache,
   /// </summary>
   public void Clear() => _subject.Perform(new ClearOp());
 
-  private readonly struct Passthrough : IBoxlessValueHandler {
+  private readonly struct Passthrough : IBoxlessValueHandler
+  {
     public readonly AutoCache Cache { get; }
 
-    public Passthrough(AutoCache cache) {
+    public Passthrough(AutoCache cache)
+    {
       Cache = cache;
     }
 
