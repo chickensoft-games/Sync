@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/Chickensoft.Sync.Tests/Chickensoft.Sync.Tests.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary;ForceNoAlign"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "test",
+      "group": "test",
+      "command": "dotnet",
+      "type": "shell",
+      "args": [
+        "test"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "coverage",
+      "group": "test",
+      "command": "${workspaceFolder}/Chickensoft.Sync.Tests/coverage.sh",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}/Chickensoft.Sync.Tests"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+    },
+  ]
+}
