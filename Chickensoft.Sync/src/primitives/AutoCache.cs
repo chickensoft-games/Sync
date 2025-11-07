@@ -1,6 +1,7 @@
 namespace Chickensoft.Sync.Primitives;
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -61,6 +62,13 @@ public interface IAutoCache : IAutoObject<AutoCache.Binding>
   /// <returns>true if the <see cref="IAutoCache"/> contains an element with the
   /// specified type; otherwise, false.</returns>
   bool TryGetValue<T>([MaybeNullWhen(false)] out T value) where T : notnull;
+
+  /// <summary>
+  /// Sets a custom equality comparer for a specific type.
+  /// </summary>
+  /// <param name="comparer">Comparer to use.</param>
+  /// <typeparam name="T">Type to set comparer for.</typeparam>
+  void SetComparer<T>(IEqualityComparer<T> comparer) where T : notnull;
 }
 
 /// <inheritdoc cref="IAutoCache"/>
@@ -159,6 +167,7 @@ public sealed class AutoCache : IAutoCache,
   private readonly SyncSubject _subject;
   private readonly Passthrough _passthrough;
   private readonly BoxlessQueue _boxlessQueue;
+  private readonly Dictionary<Type, object> _comparerDict;
   private readonly Dictionary<Type, CachedValue> _valueDict;
   private readonly Dictionary<Type, object> _refDict;
   private int _cacheCount;
@@ -176,6 +185,7 @@ public sealed class AutoCache : IAutoCache,
     _subject = new SyncSubject(this);
     _passthrough = new Passthrough(this);
     _boxlessQueue = new BoxlessQueue();
+    _comparerDict = [];
     _valueDict = [];
     _refDict = [];
   }
@@ -190,9 +200,14 @@ public sealed class AutoCache : IAutoCache,
   public void Dispose()
   {
     _subject.Dispose();
+    _comparerDict.Clear();
     _refDict.Clear();
     _valueDict.Clear();
   }
+
+  /// <inheritdoc />
+  public void SetComparer<T>(IEqualityComparer<T> comparer) where T : notnull
+    => _comparerDict[typeof(T)] = comparer;
 
   /// <inheritdoc />
   /// <returns>true if the <see cref="AutoCache"/> contains an element with the
@@ -221,6 +236,7 @@ public sealed class AutoCache : IAutoCache,
     }
     return false;
   }
+
   /// <summary>
   /// <para>
   /// Updates the cache for a given value type and broadcasts it to all
@@ -243,12 +259,20 @@ public sealed class AutoCache : IAutoCache,
   /// <typeparam name="T">Value Type</typeparam>
   public void Update<T>(in T value) where T : struct
   {
+    var comparer = _comparerDict.TryGetValue(typeof(T), out var cmp)
+      ? (IEqualityComparer<T>)cmp
+      : EqualityComparer<T>.Default;
+
     if (_valueDict.TryGetValue(typeof(T), out var cachedValue))
     {
       var cachedValueCast = (CachedValue<T>)cachedValue;
       if (!cachedValueCast.HasValue)
       {
         _cacheCount++;
+      }
+      else if (comparer.Equals(cachedValueCast.Value, value))
+      {
+        return;
       }
       cachedValueCast.Value = value;
     }
@@ -259,6 +283,7 @@ public sealed class AutoCache : IAutoCache,
       newCachedValue.Value = value;
       _cacheCount++;
     }
+
     _boxlessQueue.Enqueue(value);
     _subject.Perform(new PopOp());
   }
@@ -285,6 +310,15 @@ public sealed class AutoCache : IAutoCache,
   /// <typeparam name="T">Reference Type</typeparam>
   public void Update<T>(T value) where T : class
   {
+    if (_refDict.TryGetValue(typeof(T), out var existingValue))
+    {
+      var comparer = _comparerDict.TryGetValue(typeof(T), out var cmp)
+        ? (IEqualityComparer<T>)cmp
+        : EqualityComparer<T>.Default;
+      if (comparer.Equals((T)existingValue, value))
+      { return; }
+    }
+
     _refDict[typeof(T)] = value;
     _boxlessQueue.Enqueue(new RefValue(value));
     _subject.Perform(new PopOp());

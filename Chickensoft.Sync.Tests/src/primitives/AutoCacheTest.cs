@@ -44,6 +44,48 @@ public sealed class AutoCacheTest
   }
 
   [Fact]
+  public void DoesNotBroadcastUnchangedValues()
+  {
+    var cache = new AutoCache();
+
+    var values = new List<object>();
+
+    cache.Bind()
+      .OnUpdate((in int v) => values.Add(v));
+
+    cache.Update(5);
+    cache.Update(5);
+    cache.Update(10);
+    cache.Update(10);
+    cache.Update(5);
+
+    cache.TryGetValue<int>(out var integer).ShouldBeTrue();
+    integer.ShouldBe(5);
+
+    values.ShouldBe([5, 10, 5]);
+  }
+
+  [Fact]
+  public void UsesConfiguredComparer()
+  {
+    var cache = new AutoCache();
+    cache.SetComparer(new AllSameComparer());
+
+    var values = new List<object>();
+    cache.Bind()
+      .OnUpdate((in int v) => values.Add(v));
+
+    cache.Update(5);
+    cache.Update(10);
+    cache.Update(3);
+
+    cache.TryGetValue<int>(out var integer).ShouldBeTrue();
+    integer.ShouldBe(5);
+
+    values.ShouldBe([5]);
+  }
+
+  [Fact]
   public void BindingRespectsDerivedTypes()
   {
     var boots = new Dog("Boots");
@@ -229,5 +271,11 @@ public sealed class AutoCacheTest
     cache.Dispose();
 
     Should.Throw<ObjectDisposedException>(() => cache.Update(2));
+  }
+
+  private class AllSameComparer : IEqualityComparer<int>
+  {
+    public bool Equals(int x, int y) => true;
+    public int GetHashCode(int obj) => 0;
   }
 }
