@@ -13,7 +13,7 @@ using Sync;
 public interface IAutoChannel : IAutoObject<AutoChannel.Binding>;
 
 /// <inheritdoc cref="IAutoChannel"/>
-public sealed class AutoChannel : IAutoChannel, IPerform<AutoChannel.PopOp>
+public sealed class AutoChannel : IAutoChannel, IPerformAnyOperation
 {
   // Atomic operations
   private readonly record struct PopOp;
@@ -56,8 +56,6 @@ public sealed class AutoChannel : IAutoChannel, IPerform<AutoChannel.PopOp>
   }
 
   private readonly SyncSubject _subject;
-  private readonly Passthrough _passthrough;
-  private readonly BoxlessQueue _boxlessQueue;
 
   /// <summary>
   /// <para>
@@ -70,8 +68,6 @@ public sealed class AutoChannel : IAutoChannel, IPerform<AutoChannel.PopOp>
   public AutoChannel()
   {
     _subject = new SyncSubject(this);
-    _passthrough = new Passthrough(this);
-    _boxlessQueue = new BoxlessQueue();
   }
 
   /// <inheritdoc />
@@ -94,23 +90,11 @@ public sealed class AutoChannel : IAutoChannel, IPerform<AutoChannel.PopOp>
   /// </remarks>
   /// <param name="value">Value to update with</param>
   /// <typeparam name="T">Value Type</typeparam>
-  public void Send<T>(in T value) where T : struct
-  {
-    _boxlessQueue.Enqueue(value);
-    _subject.Perform(new PopOp());
-  }
+  public void Send<T>(in T value) where T : struct => _subject.Perform(value);
 
   private void Broadcast<T>(in T value) where T : struct =>
     _subject.Broadcast(value); // invoke callbacks registered for this value
 
-  void IPerform<PopOp>.Perform(in PopOp op) =>
-    _boxlessQueue.Dequeue(_passthrough);
-
-  private readonly struct Passthrough(AutoChannel channel) : IBoxlessValueHandler
-  {
-    private AutoChannel Channel { get; } = channel;
-
-    public void HandleValue<TValue>(in TValue value) where TValue : struct =>
-      Channel.Broadcast(value);
-  }
+  void IPerformAnyOperation.Perform<TMessage>(in TMessage message) where TMessage : struct =>
+    Broadcast(message);
 }
