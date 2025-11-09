@@ -92,9 +92,6 @@ public sealed class AutoChannel : IAutoChannel, IPerformAnyOperation
   /// <typeparam name="T">Value Type</typeparam>
   public void Send<T>(in T value) where T : struct => _subject.Perform(value);
 
-  private void Broadcast<T>(in T value) where T : struct =>
-    _subject.Broadcast(value); // invoke callbacks registered for this value
-
   void IPerformAnyOperation.Perform<TMessage>(in TMessage message) where TMessage : struct =>
-    Broadcast(message);
+    _subject.Broadcast(message);
 }
