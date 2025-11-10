@@ -277,12 +277,58 @@ autoMap.Remove("Pickles");
 autoMap["Brisket"] = new Poodle("Brisket");
 ```
 
+## 📢 AutoChannel
+
+`AutoChannel` is a broadcast channel for sending messages without storing them. Unlike `AutoCache`, which remembers the last value of each type, `AutoChannel` simply broadcasts value types to all current subscribers and moves on. Think of it as a megaphone at a dog park — you announce something, whoever's listening hears it, but there's no recording of what was said.
+
+Since `AutoChannel` doesn't cache values, it's perfect for event-style notifications where you only care about real-time delivery. We've optimized `AutoChannel` for value types so that it does not box them during broadcast.
+
+> [!NOTE]
+> `AutoChannel` only supports value types (structs). If you need to broadcast reference types, consider wrapping them in a struct or using a different primitive.
+
+> [!TIP]
+> Use `AutoChannel` when you want to broadcast events without storing state. Use `AutoCache` when you need to both broadcast and retrieve the last value of each type, or when you want to suppress duplicate consecutive updates.
+
+```csharp
+readonly record struct DogBarked(string DogName, int Loudness);
+readonly record struct CatMeowed(string CatName, bool IsHungry);
+readonly record struct TreatDispensed(string TreatType);
+
+var autoChannel = new AutoChannel();
+using var binding = autoChannel.Bind();
+
+binding
+  .On<DogBarked>(
+    (bark) => Console.WriteLine($"{bark.DogName} barked with loudness {bark.Loudness}")
+  )
+  .On<CatMeowed>(
+    (meow) => Console.WriteLine($"{meow.CatName} meowed. Hungry? {meow.IsHungry}")
+  )
+  .On<TreatDispensed>(
+    (treat) => Console.WriteLine($"Dispensed treat: {treat.TreatType}")
+  );
+
+// Broadcast events - all subscribers hear them immediately
+autoChannel.Send(new DogBarked("Brisket", 10));
+autoChannel.Send(new CatMeowed("Pickles", true));
+autoChannel.Send(new TreatDispensed("Bacon Bits"));
+```
+
+You can also use conditions to filter which messages trigger your callbacks:
+
+```csharp
+binding.On<DogBarked>(
+  (bark) => Console.WriteLine($"LOUD DOG ALERT: {bark.DogName}!"),
+  condition: bark => bark.Loudness > 7 // only react to loud barks
+);
+```
+
 ## 💰 AutoCache
 
 `AutoCache` is a cache which stores values separated by type. On update, it broadcasts to all bindings and stores the
 value based on the type given. This can then be retrieved by using the `TryGetValue<T>(out T value)` to get the last value
-updated of type `T`. Since `AutoCache` doesn't have a generic param, it is especially useful as a message channel, or a lookup-cache
-for multiple types of data. We've optimized `AutoCache` for value types so that it does not box value types on updates.
+updated of type `T`. Since `AutoCache` doesn't have a generic param, it is especially useful as a message channel that deduplicates
+consecutive identical updates, or as a lookup-cache for multiple types of data. We've optimized `AutoCache` for value types so that it does not box value types on updates.
 You might find this pattern familiar if you've used `Chickensoft.LogicBlocks`.
 
 > [!CAUTION]

@@ -92,6 +92,39 @@ public interface IPerform<TOp> where TOp : struct
 
 /// <summary>
 /// <para>
+/// Represents a handler for any type of atomic operation. Reactive
+/// components which own a <see cref="SyncSubject" /> can implement this
+/// method to perform all scheduled operations.
+/// </para>
+/// <para>
+/// To protect against re-entrance, Operations cannot always be performed
+/// right away. <see cref="SyncSubject" /> handles the operations event
+/// loop without boxing operations and defers execution until any pending
+/// operations complete when a new one is added.
+/// </para>
+/// <seealso cref="IPerform{T}"/>
+/// </summary>
+public interface IPerformAnyOperation
+{
+  /// <summary>
+  /// <para>
+  /// Represents a handler for any type of atomic operation. Reactive
+  /// components which own a <see cref="SyncSubject" /> can implement this
+  /// method to perform all scheduled operations.
+  /// </para>
+  /// <para>
+  /// To protect against re-entrance, Operations cannot always be performed
+  /// right away. <see cref="SyncSubject" /> handles the operations event
+  /// loop without boxing operations and defers execution until any pending
+  /// operations complete when a new one is added.
+  /// </para>
+  /// <seealso cref="IPerform{T}.Perform(in T)"/>
+  /// </summary>
+  void Perform<TOp>(in TOp op) where TOp : struct;
+}
+
+/// <summary>
+/// <para>
 /// In ReactiveX (Rx) terminology, this is a "PublishSubject" that is hot
 /// (discards values when there are no listeners), serialized (defers
 /// mutations and invocations while already processing to protect against
@@ -318,6 +351,10 @@ public sealed class SyncSubject : ISyncSubject
     if (_owner is IPerform<TOp> handler)
     {
       handler.Perform(in op);
+    }
+    if (_owner is IPerformAnyOperation handlerAny)
+    {
+      handlerAny.Perform(in op);
     }
   }
 

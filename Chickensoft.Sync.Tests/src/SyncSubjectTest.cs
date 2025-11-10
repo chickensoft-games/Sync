@@ -17,6 +17,24 @@ public sealed class SyncSubjectTest
     public void Perform(in T op) => Action(Subject, op);
   }
 
+  public sealed class TestOwnerAny :
+    IPerformAnyOperation,
+    IPerform<TestOwnerAny.TestOp1>,
+    IPerform<TestOwnerAny.TestOp2>
+  {
+    public readonly record struct TestOp1;
+    public readonly record struct TestOp2;
+    public SyncSubject Subject { get; set; } = default!;
+
+    public required Action<SyncSubject, object> Action { get; set; }
+    public required Action<SyncSubject, TestOp1> TestAction1 { get; init; }
+    public required Action<SyncSubject, TestOp2> TestAction2 { get; init; }
+
+    public void Perform<TOp>(in TOp op) where TOp : struct => Action(Subject, op);
+    public void Perform(in TestOp1 op) => TestAction1(Subject, op);
+    public void Perform(in TestOp2 op) => TestAction2(Subject, op);
+  }
+
   public TestOwner<int> Nop => new()
   {
     Action = (_, __) => { }
@@ -230,6 +248,78 @@ public sealed class SyncSubjectTest
 
     // owner should run before bindings each time
     log.ShouldBe(["owner 1", "callback 1", "owner 2", "callback 2"]);
+  }
+
+  [Fact]
+  public void PerformsAnyOpsSerialized()
+  {
+    var log = new List<string>();
+
+    var owner = new TestOwnerAny
+    {
+      Action = (subj, value) =>
+      {
+        log.Add($"anyAction {value}");
+        if (value is int number)
+          subj.Broadcast(number);
+      },
+      TestAction1 = (subj, value) =>
+      {
+        log.Add($"testAction1 {value}");
+        subj.Broadcast(value);
+      },
+      TestAction2 = (subj, value) =>
+      {
+        log.Add($"testAction2 {value}");
+        subj.Broadcast(value);
+      }
+    };
+
+    var subject = new SyncSubject(owner);
+    owner.Subject = subject;
+
+    var binding1 = new Mock<ISyncBinding>();
+    var binding2 = new Mock<ISyncBinding>();
+
+    var calls = 0;
+
+    binding1.Setup(b => b.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp1>.IsAny))
+      .Callback((in TestOwnerAny.TestOp1 value) =>
+      {
+        log.Add($"callback {value}");
+        calls++;
+
+        subject.IsBusy.ShouldBeTrue();
+
+        if (calls == 1)
+        {
+          subject.Perform(new TestOwnerAny.TestOp2());
+          // this should not be broadcast yet
+          binding2.Verify(
+            b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp2>.IsAny), Times.Never
+          );
+        }
+      });
+
+    subject.AddBinding(binding1.Object);
+    subject.AddBinding(binding2.Object);
+    subject.Perform(new TestOwnerAny.TestOp1());
+    subject.Perform(2);
+    subject.IsBusy.ShouldBeFalse();
+
+    binding2.Verify(b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp1>.IsAny));
+    binding2.Verify(b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp2>.IsAny));
+    binding2.Verify(b2 => b2.InvokeCallbacks(2));
+
+    // Order should be IPerform then IPerformAnyOperation
+    log.ShouldBe([
+      "testAction1 TestOp1 { }", // IPerform<TestOp1>
+      "callback TestOp1 { }", // callback for IPerform<TestOp1>
+      "anyAction TestOp1 { }", // IPerformAnyOperation (TestOp1)
+      "testAction2 TestOp2 { }", //IPerform<TestOp2>
+      "anyAction TestOp2 { }", //IPerformAnyOperation (TestOp2)
+      "anyAction 2" //IPerformAnyOperation (int)
+    ]);
   }
 
   [Fact]

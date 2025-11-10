@@ -6,6 +6,7 @@ bin/
 obj/
 .generated/
 .vs/
+.idea/
 .DS_Store
 *.DotSettings.user
 *.binlog
