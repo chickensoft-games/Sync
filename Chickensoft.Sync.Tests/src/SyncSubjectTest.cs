@@ -26,7 +26,7 @@ public sealed class SyncSubjectTest
     public readonly record struct TestOp2;
     public SyncSubject Subject { get; set; } = default!;
 
-    public Action<SyncSubject, object> Action { get; set; }
+    public required Action<SyncSubject, object> Action { get; set; }
     public required Action<SyncSubject, TestOp1> TestAction1 { get; init; }
     public required Action<SyncSubject, TestOp2> TestAction2 { get; init; }
 
@@ -256,6 +256,12 @@ public sealed class SyncSubjectTest
     var log = new List<string>();
     var owner = new TestOwnerAny
     {
+      Action = (subj, value) =>
+      {
+        log.Add($"{nameof(TestOwnerAny.Action)} {value}");
+        if (value is int number)
+          subj.Broadcast(number);
+      },
       TestAction1 = (subj, value) =>
       {
         log.Add($"{nameof(TestOwnerAny.TestAction1)} {value}");
@@ -266,13 +272,6 @@ public sealed class SyncSubjectTest
         log.Add($"{nameof(TestOwnerAny.TestAction2)} {value}");
         subj.Broadcast(value);
       }
-    };
-
-    owner.Action = (subj, value) =>
-    {
-      log.Add($"{nameof(TestOwnerAny.Action)} {value}");
-      if (value is int number)
-        subj.Broadcast(number);
     };
 
     var subject = new SyncSubject(owner);
