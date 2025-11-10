@@ -253,23 +253,33 @@ public sealed class SyncSubjectTest
   [Fact]
   public void PerformsAnyOpsSerialized()
   {
+    var callback = "callback";
+    var anyAction = nameof(TestOwnerAny.Action);
+    var testAction1 = nameof(TestOwnerAny.TestAction1);
+    var testAction2 = nameof(TestOwnerAny.TestAction2);
+
+    var testOp1 = new TestOwnerAny.TestOp1();
+    var testOp2 = new TestOwnerAny.TestOp2();
+    var number2 = 2;
+
     var log = new List<string>();
+
     var owner = new TestOwnerAny
     {
       Action = (subj, value) =>
       {
-        log.Add($"{nameof(TestOwnerAny.Action)} {value}");
+        log.Add($"{anyAction} {value}");
         if (value is int number)
           subj.Broadcast(number);
       },
       TestAction1 = (subj, value) =>
       {
-        log.Add($"{nameof(TestOwnerAny.TestAction1)} {value}");
+        log.Add($"{testAction1} {value}");
         subj.Broadcast(value);
       },
       TestAction2 = (subj, value) =>
       {
-        log.Add($"{nameof(TestOwnerAny.TestAction2)} {value}");
+        log.Add($"{testAction2} {value}");
         subj.Broadcast(value);
       }
     };
@@ -285,14 +295,14 @@ public sealed class SyncSubjectTest
     binding1.Setup(b => b.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp1>.IsAny))
       .Callback((in TestOwnerAny.TestOp1 value) =>
       {
-        log.Add($"callback {value}");
+        log.Add($"{callback} {value}");
         calls++;
 
         subject.IsBusy.ShouldBeTrue();
 
         if (calls == 1)
         {
-          subject.Perform(new TestOwnerAny.TestOp2());
+          subject.Perform(testOp2);
           // this should not be broadcast yet
           binding2.Verify(
             b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp2>.IsAny), Times.Never
@@ -302,22 +312,22 @@ public sealed class SyncSubjectTest
 
     subject.AddBinding(binding1.Object);
     subject.AddBinding(binding2.Object);
-    subject.Perform(new TestOwnerAny.TestOp1());
-    subject.Perform(2);
+    subject.Perform(testOp1);
+    subject.Perform(number2);
     subject.IsBusy.ShouldBeFalse();
 
     binding2.Verify(b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp1>.IsAny));
     binding2.Verify(b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp2>.IsAny));
     binding2.Verify(b2 => b2.InvokeCallbacks(2));
 
-    // owner should run before bindings each time
+    // Order should be IPerform then IPerformAnyOperation
     log.ShouldBe([
-      $"{nameof(TestOwnerAny.TestAction1)} {nameof(TestOwnerAny.TestOp1)} {{ }}",
-      $"callback {nameof(TestOwnerAny.TestOp1)} {{ }}",
-      $"{nameof(TestOwnerAny.Action)} {nameof(TestOwnerAny.TestOp1)} {{ }}",
-      $"{nameof(TestOwnerAny.TestAction2)} {nameof(TestOwnerAny.TestOp2)} {{ }}",
-      $"{nameof(TestOwnerAny.Action)} {nameof(TestOwnerAny.TestOp2)} {{ }}",
-      $"{nameof(TestOwnerAny.Action)} 2"
+      $"{testAction1} {testOp1}", // IPerform<TestOp1>
+      $"{callback} {testOp1}", // callback for IPerform<TestOp1>
+      $"{anyAction} {testOp1}", // IPerformAnyOperation (TestOp1)
+      $"{testAction2} {testOp2}", //IPerform<TestOp2>
+      $"{anyAction} {testOp2}", //IPerformAnyOperation (TestOp2)
+      $"{anyAction} {number2}" //IPerformAnyOperation (int)
     ]);
   }
 
