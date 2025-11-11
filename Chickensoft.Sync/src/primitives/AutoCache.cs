@@ -73,11 +73,10 @@ public interface IAutoCache : IAutoObject<AutoCache.Binding>
 
 /// <inheritdoc cref="IAutoCache"/>
 public sealed class AutoCache : IAutoCache,
-  IPerform<AutoCache.PopOp>,
+  IPerformAnyOperation,
   IPerform<AutoCache.ClearOp>
 {
   // Atomic operations
-  private readonly record struct PopOp;
   private readonly record struct ClearOp;
 
   // Broadcasts
@@ -165,8 +164,6 @@ public sealed class AutoCache : IAutoCache,
   }
 
   private readonly SyncSubject _subject;
-  private readonly Passthrough _passthrough;
-  private readonly BoxlessQueue _boxlessQueue;
   private readonly Dictionary<Type, object> _comparerDict;
   private readonly Dictionary<Type, CachedValue> _valueDict;
   private readonly Dictionary<Type, object> _refDict;
@@ -183,8 +180,6 @@ public sealed class AutoCache : IAutoCache,
   public AutoCache()
   {
     _subject = new SyncSubject(this);
-    _passthrough = new Passthrough(this);
-    _boxlessQueue = new BoxlessQueue();
     _comparerDict = [];
     _valueDict = [];
     _refDict = [];
@@ -284,8 +279,7 @@ public sealed class AutoCache : IAutoCache,
       _cacheCount++;
     }
 
-    _boxlessQueue.Enqueue(value);
-    _subject.Perform(new PopOp());
+    _subject.Perform(value);
   }
 
   /// <summary>
@@ -320,15 +314,16 @@ public sealed class AutoCache : IAutoCache,
     }
 
     _refDict[typeof(T)] = value;
-    _boxlessQueue.Enqueue(new RefValue(value));
-    _subject.Perform(new PopOp());
+    _subject.Perform(new RefValue(value));
   }
 
-  private void Handle<T>(in T value) where T : struct =>
-    _subject.Broadcast(value); // invoke callbacks registered for this value
-
-  void IPerform<PopOp>.Perform(in PopOp op) =>
-    _boxlessQueue.Dequeue(_passthrough);
+  void IPerformAnyOperation.Perform<TOp>(in TOp op) where TOp : struct
+  {
+    if (op is not ClearOp)
+    {
+      _subject.Broadcast(op);
+    }
+  }
 
   void IPerform<ClearOp>.Perform(in ClearOp op)
   {
@@ -356,17 +351,4 @@ public sealed class AutoCache : IAutoCache,
   /// Clears the cache of any stored values.
   /// </summary>
   public void Clear() => _subject.Perform(new ClearOp());
-
-  private readonly struct Passthrough : IBoxlessValueHandler
-  {
-    public readonly AutoCache Cache { get; }
-
-    public Passthrough(AutoCache cache)
-    {
-      Cache = cache;
-    }
-
-    public void HandleValue<TValue>(in TValue value) where TValue : struct =>
-      Cache.Handle(value);
-  }
 }
