@@ -33,6 +33,22 @@ public sealed class AutoListTest
   }
 
   [Fact]
+  public void AddBroadcastsModification()
+  {
+    var list = new AutoList<int>();
+    var log = new List<string>();
+    using var binding = list.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    list.Add(42);
+
+    list.Count.ShouldBe(1);
+    list.IndexOf(42).ShouldBe(0);
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
   public void InsertBroadcastsCorrectIndex()
   {
     var list = new AutoList<int>([10, 30]);
@@ -45,6 +61,21 @@ public sealed class AutoListTest
 
     list.ShouldBe([10, 20, 30]);
     log.ShouldBe(["add 20 @ 1"]);
+  }
+
+  [Fact]
+  public void InsertBroadcastsModification()
+  {
+    var list = new AutoList<int>([10, 30]);
+    var log = new List<string>();
+    using var binding = list.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    list.Insert(1, 20);
+
+    list.ShouldBe([10, 20, 30]);
+    log.ShouldBe(["modify"]);
   }
 
   [Fact]
@@ -73,6 +104,21 @@ public sealed class AutoListTest
   }
 
   [Fact]
+  public void IndexerUpdateBroadcastsModification()
+  {
+    var list = new AutoList<string>(["a"]);
+    var log = new List<string>();
+    using var binding = list.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    list[0] = "b";
+
+    list[0].ShouldBe("b");
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
   public void IndexerDoesNotUpdateWhenComparerSaysEqual()
   {
     var list = new AutoList<string>(
@@ -82,6 +128,23 @@ public sealed class AutoListTest
     using var binding = list.Bind();
 
     binding.OnUpdate((_, __) => called = true);
+
+    list[0] = "a";
+
+    called.ShouldBeFalse();
+    list[0].ShouldBe("A");
+  }
+
+  [Fact]
+  public void IndexerDoesNotBroadcastModificationWhenComparerSaysEqual()
+  {
+    var list = new AutoList<string>(
+      ["A"], comparer: StringComparer.OrdinalIgnoreCase
+    );
+    var called = false;
+    using var binding = list.Bind();
+
+    binding.OnModify(() => called = true);
 
     list[0] = "a";
 
@@ -107,6 +170,21 @@ public sealed class AutoListTest
   }
 
   [Fact]
+  public void RemoveAt_BroadcastsModification()
+  {
+    var list = new AutoList<int>([1, 2, 3]);
+    var log = new List<string>();
+    using var binding = list.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    list.RemoveAt(1);
+
+    list.ShouldBe([1, 3]);
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
   public void RemoveOutOfBounds()
   {
     var list = new AutoList<int>([1]);
@@ -127,6 +205,22 @@ public sealed class AutoListTest
     list.Add(1);
     list.Clear(); // now non-empty -> broadcast
     calls.ShouldBe(1);
+    list.Count.ShouldBe(0);
+  }
+
+  [Fact]
+  public void ClearBroadcastsModification()
+  {
+    var list = new AutoList<int>();
+    var calls = 0;
+    list.Bind().OnModify(() => calls++);
+
+    list.Clear(); // empty -> no-op
+    calls.ShouldBe(0);
+
+    list.Add(1); // broadcasts modification
+    list.Clear(); // now non-empty -> broadcast
+    calls.ShouldBe(2);
     list.Count.ShouldBe(0);
   }
 

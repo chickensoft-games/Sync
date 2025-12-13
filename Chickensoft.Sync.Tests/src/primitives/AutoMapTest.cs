@@ -53,6 +53,22 @@ public sealed class AutoMapTest
   }
 
   [Fact]
+  public void AddBroadcastsModification()
+  {
+    var map = new AutoMap<int, string>();
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    map.Add(1, "one");
+
+    map.Count.ShouldBe(1);
+    map[1].ShouldBe("one");
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
   public void UpdateBroadcasts()
   {
     var map = new AutoMap<int, string> { [1] = "one" };
@@ -70,7 +86,23 @@ public sealed class AutoMapTest
   }
 
   [Fact]
-  public void OnRemoveWithValueBroadcasts()
+  public void UpdateBroadcastsModification()
+  {
+    var map = new AutoMap<int, string> { [1] = "one" };
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    map[1] = "uno";
+
+    map.Count.ShouldBe(1);
+    map[1].ShouldBe("uno");
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
+  public void RemoveWithValueBroadcasts()
   {
     var map = new AutoMap<int, string> { [1] = "one" };
     var log = new List<string>();
@@ -87,7 +119,22 @@ public sealed class AutoMapTest
   }
 
   [Fact]
-  public void OnRemoveBroadcasts()
+  public void RemoveWithValueBroadcastsModification()
+  {
+    var map = new AutoMap<int, string> { [1] = "one" };
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    map.Remove(1);
+
+    map.Count.ShouldBe(0);
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
+  public void RemoveBroadcasts()
   {
     var map = new AutoMap<int, string> { [1] = "one" };
     var log = new List<string>();
@@ -102,18 +149,58 @@ public sealed class AutoMapTest
   }
 
   [Fact]
-  public void ClearBroadcasts()
+  public void RemoveBroadcastsModification()
   {
-    var map = new AutoMap<int, string> { [1] = "one", [2] = "two" };
+    var map = new AutoMap<int, string> { [1] = "one" };
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    map.Remove(1);
+
+    map.Count.ShouldBe(0);
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
+  public void ClearBroadcastsOnlyIfNotEmpty()
+  {
+    var map = new AutoMap<int, string>();
     var log = new List<string>();
     using var binding = map.Bind();
 
     binding.OnClear(() => log.Add("clear"));
 
     map.Clear();
+    log.ShouldBeEmpty();
 
+    map.Add(1, "one");
+    map.Add(2, "two");
+
+    map.Clear();
     map.Count.ShouldBe(0);
     log.ShouldBe(["clear"]);
+  }
+
+  [Fact]
+  public void ClearBroadcastsModificationOnlyIfNotEmpty()
+  {
+    var map = new AutoMap<int, string>();
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    map.Clear();
+
+    map.Add(1, "one");
+    map.Add(2, "two");
+
+    map.Clear();
+    map.Count.ShouldBe(0);
+    // 2 for the adds, 1 for the clear
+    log.ShouldBe(["modify", "modify", "modify"]);
   }
 
   [Fact]
