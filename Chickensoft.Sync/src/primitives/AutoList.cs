@@ -73,6 +73,7 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
   );
   private readonly record struct RemoveBroadcast(T Item, int Index);
   private readonly record struct ClearBroadcast();
+  private readonly record struct ModifyBroadcast();
 
   /// <summary>
   /// A binding to an <see cref="AutoList{T}" />.
@@ -89,7 +90,6 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     public Binding OnAdd(Action<T> callback)
     {
       AddCallback((in AddBroadcast broadcast) => callback(broadcast.Item));
-
       return this;
     }
 
@@ -114,7 +114,6 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
         (in AddBroadcast broadcast) => callback((TDerived)broadcast.Item!),
         (in AddBroadcast broadcast) => broadcast.Item is TDerived
       );
-
       return this;
     }
 
@@ -129,7 +128,6 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
       AddCallback(
         (in AddBroadcast broadcast) => callback(broadcast.Item, broadcast.Index)
       );
-
       return this;
     }
 
@@ -156,7 +154,6 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
           callback((TDerived)broadcast.Item!, broadcast.Index),
         (in AddBroadcast broadcast) => broadcast.Item is TDerived
       );
-
       return this;
     }
 
@@ -172,7 +169,6 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
         (in UpdateBroadcast broadcast) =>
           callback(broadcast.Previous, broadcast.Item)
       );
-
       return this;
     }
 
@@ -220,7 +216,6 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
         (in UpdateBroadcast broadcast) =>
           callback(broadcast.Previous, broadcast.Item, broadcast.Index)
       );
-
       return this;
     }
 
@@ -271,7 +266,6 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
       AddCallback(
         (in RemoveBroadcast broadcast) => callback(broadcast.Item)
       );
-
       return this;
     }
 
@@ -313,7 +307,6 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
         (in RemoveBroadcast broadcast) =>
           callback(broadcast.Item, broadcast.Index)
       );
-
       return this;
     }
 
@@ -340,19 +333,28 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
           callback((TDerived)broadcast.Item!, broadcast.Index),
         (in RemoveBroadcast broadcast) => broadcast.Item is TDerived
       );
-
       return this;
     }
 
     /// <summary>
     /// Registers a callback to be invoked when the list is cleared.
     /// </summary>
-    /// <param name="callback">Callback.</param>
+    /// <param name="callback">Callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
     public Binding OnClear(Action callback)
     {
       AddCallback((in ClearBroadcast _) => callback());
+      return this;
+    }
 
+    /// <summary>
+    /// Registers a callback to be invoked on any modification to the list.
+    /// </summary>
+    /// <param name="callback">Callback to be invoked.</param>
+    /// <returns>This binding (for chaining).</returns>
+    public Binding OnModify(Action callback)
+    {
+      AddCallback((in ModifyBroadcast _) => callback());
       return this;
     }
   }
@@ -497,6 +499,7 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     var item = op.Item;
     _list.Add(item);
     _subject.Broadcast(new AddBroadcast(item, _list.Count - 1));
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   void IPerform<InsertOp>.Perform(in InsertOp op)
@@ -515,6 +518,7 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
 
     _list.Insert(index, item);
     _subject.Broadcast(new AddBroadcast(item, index));
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   void IPerform<UpdateOp>.Perform(in UpdateOp op)
@@ -537,6 +541,7 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     {
       _list[index] = item;
       _subject.Broadcast(new UpdateBroadcast(previous, item, index));
+      _subject.Broadcast(new ModifyBroadcast());
     }
   }
 
@@ -557,6 +562,7 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
     _list.RemoveAt(index);
 
     _subject.Broadcast(new RemoveBroadcast(item, index));
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   void IPerform<RemoveByItem>.Perform(in RemoveByItem op)
@@ -569,6 +575,7 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
 
     _list.RemoveAt(index);
     _subject.Broadcast(new RemoveBroadcast(item, index));
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   void IPerform<ClearOp>.Perform(in ClearOp op)
@@ -578,6 +585,7 @@ public sealed class AutoList<T> : IAutoList<T>, IList<T>,
 
     _list.Clear();
     _subject.Broadcast(new ClearBroadcast());
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   #endregion Operations

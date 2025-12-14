@@ -54,6 +54,7 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
   private readonly record struct AddBroadcast(T Item);
   private readonly record struct RemoveBroadcast(T Item);
   private readonly record struct ClearBroadcast();
+  private readonly record struct ModifyBroadcast();
 
   /// <summary>
   /// A binding to an <see cref="AutoSet{T}" />.
@@ -145,6 +146,17 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     {
       AddCallback((in ClearBroadcast _) => callback());
 
+      return this;
+    }
+
+    /// <summary>
+    /// Registers a callback to be invoked whenever the set is modified.
+    /// </summary>
+    /// <param name="callback">Callback to be invoked.</param>
+    /// <returns>This binding (for chaining).</returns>
+    public Binding OnModify(Action callback)
+    {
+      AddCallback((in ModifyBroadcast _) => callback());
       return this;
     }
   }
@@ -248,6 +260,7 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     if (_set.Add(operation.Item))
     {
       _subject.Broadcast(new AddBroadcast(operation.Item));
+      _subject.Broadcast(new ModifyBroadcast());
     }
   }
 
@@ -256,6 +269,7 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     if (_set.Remove(operation.Item))
     {
       _subject.Broadcast(new RemoveBroadcast(operation.Item));
+      _subject.Broadcast(new ModifyBroadcast());
     }
   }
 
@@ -267,6 +281,7 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     _set.Clear();
 
     _subject.Broadcast(new ClearBroadcast());
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   #endregion Operations

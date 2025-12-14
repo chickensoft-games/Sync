@@ -50,7 +50,23 @@ public sealed class AutoSetTest
   }
 
   [Fact]
-  public void OnRemoveBroadcasts()
+  public void AddBroadcastsModification()
+  {
+    var set = new AutoSet<int>();
+    var log = new List<string>();
+    using var binding = set.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    set.Add(1);
+
+    set.Count.ShouldBe(1);
+    set.Contains(1).ShouldBeTrue();
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
+  public void RemoveBroadcasts()
   {
     var set = new AutoSet<int> { 1 };
     var log = new List<string>();
@@ -66,14 +82,36 @@ public sealed class AutoSetTest
   }
 
   [Fact]
-  public void ClearBroadcasts()
+  public void RemoveBroadcastsModification()
   {
-    var set = new AutoSet<int> { 1, 2, 3 };
+    var set = new AutoSet<int> { 1 };
+    var log = new List<string>();
+    using var binding = set.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    set.Remove(1);
+
+    set.Count.ShouldBe(0);
+    set.Contains(1).ShouldBeFalse();
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
+  public void ClearBroadcastsOnlyIfNotEmpty()
+  {
+    var set = new AutoSet<int>();
     var log = new List<string>();
     using var binding = set.Bind();
 
     binding.OnClear(() => log.Add("clear"));
 
+    set.Clear();
+    log.ShouldBeEmpty();
+
+    set.Add(1);
+    set.Add(2);
+    set.Add(3);
     set.Clear();
 
     set.Count.ShouldBe(0);
@@ -81,6 +119,31 @@ public sealed class AutoSetTest
     set.Contains(2).ShouldBeFalse();
     set.Contains(3).ShouldBeFalse();
     log.ShouldBe(["clear"]);
+  }
+
+  [Fact]
+  public void ClearBroadcastsModification()
+  {
+    var set = new AutoSet<int>();
+    var log = new List<string>();
+    using var binding = set.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    set.Clear();
+    log.ShouldBeEmpty();
+
+    set.Add(1);
+    set.Add(2);
+    set.Add(3);
+    set.Clear();
+
+    set.Count.ShouldBe(0);
+    set.Contains(1).ShouldBeFalse();
+    set.Contains(2).ShouldBeFalse();
+    set.Contains(3).ShouldBeFalse();
+    // 3 for the adds, 1 for the clear
+    log.ShouldBe(["modify", "modify", "modify", "modify"]);
   }
 
   [Fact]

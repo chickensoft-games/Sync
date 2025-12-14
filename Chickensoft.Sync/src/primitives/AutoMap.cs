@@ -57,6 +57,7 @@ public sealed class AutoMap<TKey, TValue> :
   );
   private readonly record struct RemoveBroadcast(TKey Key, TValue Value);
   private readonly record struct ClearBroadcast();
+  private readonly record struct ModifyBroadcast();
 
   /// <summary>
   /// A binding to an <see cref="AutoMap{TKey, TValue}" />.
@@ -123,8 +124,19 @@ public sealed class AutoMap<TKey, TValue> :
     /// <returns>This binding (for chaining).</returns>
     public Binding OnClear(Action callback)
     {
-      AddCallback((in ClearBroadcast b) => callback());
+      AddCallback((in ClearBroadcast _) => callback());
 
+      return this;
+    }
+
+    /// <summary>
+    /// Registers a callback to be invoked whenever the map is modified.
+    /// </summary>
+    /// <param name="callback">Callback to be invoked.</param>
+    /// <returns>This binding (for chaining).</returns>
+    public Binding OnModify(Action callback)
+    {
+      AddCallback((in ModifyBroadcast _) => callback());
       return this;
     }
   }
@@ -302,6 +314,7 @@ public sealed class AutoMap<TKey, TValue> :
     _map.Add(key, value);
 
     _subject.Broadcast(new AddBroadcast(key, value));
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   void IPerform<UpdateOp>.Perform(in UpdateOp op)
@@ -320,6 +333,7 @@ public sealed class AutoMap<TKey, TValue> :
     _map[key] = value;
 
     _subject.Broadcast(new UpdateBroadcast(key, existing, value));
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   void IPerform<RemoveOp>.Perform(in RemoveOp op)
@@ -332,6 +346,7 @@ public sealed class AutoMap<TKey, TValue> :
     }
 
     _subject.Broadcast(new RemoveBroadcast(key, value));
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   void IPerform<RemoveMatchingOp>.Perform(in RemoveMatchingOp op)
@@ -351,6 +366,7 @@ public sealed class AutoMap<TKey, TValue> :
     _map.Remove(key);
 
     _subject.Broadcast(new RemoveBroadcast(key, existing));
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   void IPerform<ClearOp>.Perform(in ClearOp op)
@@ -361,6 +377,7 @@ public sealed class AutoMap<TKey, TValue> :
     _map.Clear();
 
     _subject.Broadcast(new ClearBroadcast());
+    _subject.Broadcast(new ModifyBroadcast());
   }
 
   #endregion Operations

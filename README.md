@@ -200,7 +200,9 @@ binding
     Console.WriteLine(
       $"Dog at index {index} updated from {previous} to Cat {current}"
     )
-  );
+  )
+  // gets notified of ALL modifications to the list (add, remove, clear, update)
+  .OnModify(() => Console.WriteLine("List changed"));
 
 autoList.Add(new Dog("Chibi"));
 autoList.RemoveAt(0);
@@ -239,7 +241,9 @@ binding
   .OnAdd((Dog dog) => Console.WriteLine($"Dog added: {dog.Name}"))
   // only called when a Cat is removed
   .OnRemove((Cat cat) => Console.WriteLine($"Cat removed: {cat.Name}"))
-  .OnClear(() => Console.WriteLine("Set cleared"));
+  .OnClear(() => Console.WriteLine("Set cleared"))
+  // gets notified of ALL modifications to the set (add, remove, clear, update)
+  .OnModify(() => Console.WriteLine("Set changed"));;
 
 autoSet.Add(new Dog("Chibi"));
 autoSet.Remove(new Cat("Pickles"));
@@ -270,7 +274,8 @@ binding
   .OnUpdate((key, previous, current) =>
     Console.WriteLine($"Animal updated: {key} from {previous} to {current}")
   )
-  .OnClear(() => Console.WriteLine("Map cleared"));
+  .OnClear(() => Console.WriteLine("Map cleared"))
+  .OnModify(() => Console.WriteLine("Map changed"));
 
 autoMap["Chibi"] = new Dog("Chibi");
 autoMap.Remove("Pickles");
