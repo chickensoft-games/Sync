@@ -20,8 +20,6 @@ public sealed class DisposalBin : ICollection<IDisposable>, ICollection<IAsyncDi
   void ICollection<IAsyncDisposable>.Clear() => _asyncDisposables.Clear();
   void ICollection<IAsyncDisposable>.CopyTo(IAsyncDisposable[] array, int arrayIndex) => _asyncDisposables.CopyTo(array, arrayIndex);
 
-  public int Count => _disposables.Count + _asyncDisposables.Count;
-
   public void Add(IDisposable disposable) => _disposables.Add(disposable);
   public bool Contains(IDisposable disposable) => _disposables.Contains(disposable);
   public bool Remove(IDisposable disposable) => _disposables.Remove(disposable);
