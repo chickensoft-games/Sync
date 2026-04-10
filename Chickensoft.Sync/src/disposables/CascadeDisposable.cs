@@ -25,5 +25,6 @@ public readonly record struct CascadeDisposable : IDisposable, IAsyncDisposable
 
   public static CascadeDisposable Create(IDisposable disposable) => new(disposable, disposable as IAsyncDisposable);
   public static CascadeDisposable Create(IAsyncDisposable disposable) => new(disposable as IDisposable, disposable);
-  public static CascadeDisposable Create<T>(T disposable) where T : IDisposable, IAsyncDisposable => new(disposable, disposable);
+  public static CascadeDisposable Create<TDisposable>(TDisposable disposable)
+    where TDisposable : IDisposable, IAsyncDisposable => new(disposable, disposable);
 }
