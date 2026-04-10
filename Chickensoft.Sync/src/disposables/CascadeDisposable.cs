@@ -3,24 +3,51 @@ namespace Chickensoft.Sync.Disposables;
 using System;
 using System.Threading.Tasks;
 
-public readonly record struct CascadeDisposable : IDisposable, IAsyncDisposable
+public struct CascadeDisposable : IEquatable<CascadeDisposable>, IDisposable, IAsyncDisposable
 {
-  public readonly IDisposable? Disposable;
-  public readonly IAsyncDisposable? AsyncDisposable;
+  private bool _isDisposed;
+  private bool _isAsyncDisposed;
+
+  public IDisposable? Disposable { get; }
+  public IAsyncDisposable? AsyncDisposable { get; }
 
   private CascadeDisposable(IDisposable? disposable, IAsyncDisposable? asyncDisposable)
   {
     Disposable = disposable;
+    _isDisposed = disposable == null;
     AsyncDisposable = asyncDisposable;
+    _isAsyncDisposed = asyncDisposable == null;
   }
 
-  public void Dispose() => Disposable?.Dispose();
-  public ValueTask DisposeAsync() => AsyncDisposable?.DisposeAsync() ?? default; // = ValueTask.CompletedTask
+  public readonly bool Equals(CascadeDisposable other)
+    => Disposable == other.Disposable
+    && AsyncDisposable == other.AsyncDisposable;
 
-  public void Deconstruct(out IDisposable? disposable, out IAsyncDisposable? asyncDisposable)
+  public override readonly bool Equals(object obj)
+    => obj is CascadeDisposable other
+    && Equals(other);
+
+  public override readonly int GetHashCode()
+    => HashCode.Combine(Disposable, AsyncDisposable);
+
+  public void Dispose()
   {
-    disposable = Disposable;
-    asyncDisposable = AsyncDisposable;
+    if (!_isDisposed)
+    {
+      Disposable!.Dispose();
+      _isDisposed = true;
+    }
+  }
+
+  public async ValueTask DisposeAsync()
+  {
+    if (!_isAsyncDisposed)
+    {
+      await AsyncDisposable!.DisposeAsync();
+      _isAsyncDisposed = true;
+    }
+
+    Dispose();
   }
 
   public static CascadeDisposable Create(IDisposable disposable) => new(disposable, disposable as IAsyncDisposable);
