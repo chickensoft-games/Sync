@@ -107,8 +107,17 @@ public sealed class CompositeDisposable : ICollection<CascadeDisposable>, IDispo
 
 public static class DisposableExtensions
 {
-  public static void DisposeWith(this IDisposable disposable, CompositeDisposable composite) => composite.Add(CascadeDisposable.Create(disposable));
-  public static void DisposeWith(this IAsyncDisposable disposable, CompositeDisposable composite) => composite.Add(CascadeDisposable.Create(disposable));
-  public static void DisposeWith<TDisposable>(this TDisposable disposable, CompositeDisposable composite)
+  public static bool DisposeWith(this IDisposable disposable, CompositeDisposable composite) => composite.Add(CascadeDisposable.Create(disposable));
+  public static ValueTask<bool> DisposeWithAsync(this IDisposable disposable, CompositeDisposable composite)
+    => composite.AddAsync(CascadeDisposable.Create(disposable));
+
+  public static bool DisposeWith(this IAsyncDisposable disposable, CompositeDisposable composite) => composite.Add(CascadeDisposable.Create(disposable));
+  public static ValueTask<bool> DisposeWithAsync(this IAsyncDisposable disposable, CompositeDisposable composite)
+    => composite.AddAsync(CascadeDisposable.Create(disposable));
+
+  public static bool DisposeWith<TDisposable>(this TDisposable disposable, CompositeDisposable composite)
     where TDisposable : IDisposable, IAsyncDisposable => composite.Add(CascadeDisposable.Create(disposable));
+
+  public static ValueTask<bool> DisposeWithAsync<TDisposable>(this TDisposable disposable, CompositeDisposable composite)
+    where TDisposable : IDisposable, IAsyncDisposable => composite.AddAsync(CascadeDisposable.Create(disposable));
 }
