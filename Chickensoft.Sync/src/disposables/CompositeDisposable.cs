@@ -3,24 +3,28 @@ namespace Chickensoft.Sync.Disposables;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Chickensoft.Collections;
 
-public sealed class CompositeDisposable : ICollection<CascadeDisposable>, IDisposable, IAsyncDisposable
+/// <summary>Represents a set of disposable resources that are disposed together.</summary>
+public sealed class CompositeDisposable : ICollection<IDisposable>, IDisposable
 {
-  private readonly Set<CascadeDisposable> _disposables = [];
+  private readonly Set<IDisposable> _disposables = [];
 
-  public bool IsDisposed { get; private set; }
+  private bool _isDisposed;
 
+  /// <summary>Gets the number of disposables that are contained in a <see cref="CompositeDisposable"/>.</summary>
+  /// <returns>The number of disposables that are contained in the <see cref="CompositeDisposable"/>.</returns>
   public int Count => _disposables.Count;
-  public bool IsReadOnly => false;
 
-  void ICollection<CascadeDisposable>.Add(CascadeDisposable disposable) => Add(disposable);
+  bool ICollection<IDisposable>.IsReadOnly => false;
+  void ICollection<IDisposable>.Add(IDisposable disposable) => Add(disposable);
 
-  public bool Add(CascadeDisposable disposable)
+  /// <summary>Adds a disposable to the <see cref="CompositeDisposable"/>, or disposes the disposable if the <see cref="CompositeDisposable"/> has already been disposed.</summary>
+  /// <param name="disposable">The disposable to add.</param>
+  /// <returns><see langword="true"/> if the disposable was successfully added; otherwise, <see langword="false"/>.</returns>
+  public bool Add(IDisposable disposable)
   {
-    if (IsDisposed)
+    if (_isDisposed)
     {
       disposable.Dispose();
       return false;
@@ -29,22 +33,17 @@ public sealed class CompositeDisposable : ICollection<CascadeDisposable>, IDispo
     return _disposables.Add(disposable);
   }
 
-  public async ValueTask<bool> AddAsync(CascadeDisposable disposable)
+  /// <summary>Determines whether the <see cref="CompositeDisposable"/> contains a specific disposable.</summary>
+  /// <param name="disposable">The disposable to search for.</param>
+  /// <returns><see langword="true"/> if the disposable was found; otherwise, <see langword="false"/>.</returns>
+  public bool Contains(IDisposable disposable) => _disposables.Contains(disposable);
+
+  /// <summary>Removes and disposes the specified disposable from the <see cref="CompositeDisposable"/>.</summary>
+  /// <param name="disposable">The disposable to remove.</param>
+  /// <returns><see langword="true"/> if the disposable is successfully found, removed and disposed; otherwise, <see langword="false"/>.</returns>
+  public bool Remove(IDisposable disposable)
   {
-    if (IsDisposed)
-    {
-      await disposable.DisposeAsync();
-      return false;
-    }
-
-    return _disposables.Add(disposable);
-  }
-
-  public bool Contains(CascadeDisposable disposable) => _disposables.Contains(disposable);
-
-  public bool Remove(CascadeDisposable disposable)
-  {
-    if (!IsDisposed && _disposables.Remove(disposable))
+    if (!_isDisposed && _disposables.Remove(disposable))
     {
       disposable.Dispose();
       return true;
@@ -53,17 +52,7 @@ public sealed class CompositeDisposable : ICollection<CascadeDisposable>, IDispo
     return false;
   }
 
-  public async ValueTask<bool> RemoveAsync(CascadeDisposable disposable)
-  {
-    if (!IsDisposed && _disposables.Remove(disposable))
-    {
-      await disposable.DisposeAsync();
-      return true;
-    }
-
-    return false;
-  }
-
+  /// <summary>Removes all disposables from a <see cref="CompositeDisposable"/>, but does not dispose the <see cref="CompositeDisposable"/>.</summary>
   public void Clear()
   {
     foreach (var disposable in _disposables)
@@ -73,51 +62,23 @@ public sealed class CompositeDisposable : ICollection<CascadeDisposable>, IDispo
     _disposables.Clear();
   }
 
-  public ValueTask ClearAsync()
-  {
-    var disposeTasks = _disposables.Select(disposable => disposable.DisposeAsync().AsTask()).ToArray();
-    _disposables.Clear();
-    return new ValueTask(Task.WhenAll(disposeTasks));
-  }
+  /// <summary>Copies the disposables contained in the <see cref="CompositeDisposable"/> to an array, starting at a particular array index.</summary>
+  /// <param name="array">The array to copy the contained disposables to.</param>
+  /// <param name="arrayIndex">The zero-based index at which copying begins.</param>
+  public void CopyTo(IDisposable[] array, int arrayIndex) => _disposables.CopyTo(array, arrayIndex);
 
-  public void CopyTo(CascadeDisposable[] array, int arrayIndex) => _disposables.CopyTo(array, arrayIndex);
-
-  public IEnumerator<CascadeDisposable> GetEnumerator() => _disposables.GetEnumerator();
+  /// <summary>Returns an enumerator that iterates through the <see cref="CompositeDisposable"/>.</summary>
+  /// <returns>An enumerator to iterate over the disposables.</returns>
+  public IEnumerator<IDisposable> GetEnumerator() => _disposables.GetEnumerator();
   IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+  /// <summary>Disposes all disposables in the <see cref="CompositeDisposable"/> and clears the <see cref="CompositeDisposable"/>.</summary>
   public void Dispose()
   {
-    if (!IsDisposed)
+    if (!_isDisposed)
     {
-      IsDisposed = true;
+      _isDisposed = true;
       Clear();
     }
   }
-
-  public ValueTask DisposeAsync()
-  {
-    if (!IsDisposed)
-    {
-      IsDisposed = true;
-      return ClearAsync();
-    }
-    return default; // = ValueTask.CompletedTask
-  }
-}
-
-public static class DisposableExtensions
-{
-  public static bool DisposeWith(this IDisposable disposable, CompositeDisposable composite) => composite.Add(CascadeDisposable.Create(disposable));
-  public static ValueTask<bool> DisposeWithAsync(this IDisposable disposable, CompositeDisposable composite)
-    => composite.AddAsync(CascadeDisposable.Create(disposable));
-
-  public static bool DisposeWith(this IAsyncDisposable disposable, CompositeDisposable composite) => composite.Add(CascadeDisposable.Create(disposable));
-  public static ValueTask<bool> DisposeWithAsync(this IAsyncDisposable disposable, CompositeDisposable composite)
-    => composite.AddAsync(CascadeDisposable.Create(disposable));
-
-  public static bool DisposeWith<TDisposable>(this TDisposable disposable, CompositeDisposable composite)
-    where TDisposable : IDisposable, IAsyncDisposable => composite.Add(CascadeDisposable.Create(disposable));
-
-  public static ValueTask<bool> DisposeWithAsync<TDisposable>(this TDisposable disposable, CompositeDisposable composite)
-    where TDisposable : IDisposable, IAsyncDisposable => composite.AddAsync(CascadeDisposable.Create(disposable));
 }
