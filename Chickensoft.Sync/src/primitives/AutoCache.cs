@@ -1,11 +1,9 @@
 namespace Chickensoft.Sync.Primitives;
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Collections;
 using Sync;
 
 internal abstract class CachedValue

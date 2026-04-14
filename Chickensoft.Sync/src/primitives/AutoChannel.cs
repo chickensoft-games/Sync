@@ -2,7 +2,6 @@ namespace Chickensoft.Sync.Primitives;
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Collections;
 using Sync;
 
 /// <summary>
