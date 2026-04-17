@@ -385,6 +385,47 @@ autoCache.TryGetValue<Dog>(out var dog) // animal will be the Dog - Cookie
 autoCache.TryGetValue<Cat>(out var cat) // animal will be the Cat - Pickles
 ```
 
+## 🗑️ CompositeDisposable
+`CompositeDisposable` represents a set of disposable resources that are disposed together. It is a utility class for bundling up multiple disposables, so that you can dispose them all with one `Dispose()` call. Sync also provides a `DisposeWith()` extension method for disposables that can be chained for convenience.
+
+Internally `CompositeDisposable` implements a `HashSet<IDisposable>` so that no disposable gets disposed of twice. When calling `Dispose()`, it will dispose and clear out all disposables that have been added, and automatically dispose of any disposable that is added in the future.
+
+> [!TIP]
+> If you want to dispose of all disposables that have been added, but **not** dispose of any newly added disposables, call `Clear()` instead. 
+
+```csharp
+// Enemy visualization logic
+public sealed class EnemyView : IDisposable
+{
+  public Enemy Enemy { get; }
+
+  private CompositeDisposable _disposal = new();
+
+  public EnemyView(Enemy enemy)
+  {
+    Enemy = enemy;
+
+    // listen to changes in the enemy
+    enemy.Health.Bind()
+      .OnValue(...)
+      .DisposeWith(_disposal); // Add binding
+
+    enemy.Attack.Bind()
+      .OnValue(...)
+      .DisposeWith(_disposal); // Add binding
+
+    enemy.Defense.Bind()
+      .OnValue(...)
+      .DisposeWith(_disposal); // Add binding
+  }
+
+  public void Dispose()
+  {
+    _disposal.Dispose(); // Dispose all bindings
+  }
+}
+```
+
 ## 🧰 Build Your Own Reactive Primitives
 
 Sync primitives are all built on top of a `SyncSubject`. A `SyncSubject` is an object which your own reactive primitive will own and use to notify `SyncBinding`s of changes in your reactive primitive.
