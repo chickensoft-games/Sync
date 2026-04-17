@@ -388,7 +388,7 @@ autoCache.TryGetValue<Cat>(out var cat) // animal will be the Cat - Pickles
 ## 🗑️ CompositeDisposable
 `CompositeDisposable` represents a set of disposable resources that are disposed together. It is a utility class for bundling up multiple disposables, so that you can dispose them all with one `Dispose()` call. Sync also provides a `DisposeWith()` extension method for disposables that can be chained for convenience.
 
-Internally `CompositeDisposable` implements a `HashSet<IDisposable>` so that no disposable gets dispoed of twice. When calling `Dispose()`, it will dispose and clear out all disposables that have been added, and automatically dispose of any disposable that is added in the future.
+Internally `CompositeDisposable` implements a `HashSet<IDisposable>` so that no disposable gets disposed of twice. When calling `Dispose()`, it will dispose and clear out all disposables that have been added, and automatically dispose of any disposable that is added in the future.
 
 > [!TIP]
 > If you want to dispose of all disposables that have been added, but **not** dispose of any newly added disposables, call `Clear()` instead. 
