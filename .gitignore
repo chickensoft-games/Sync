@@ -10,4 +10,5 @@ obj/
 .DS_Store
 *.DotSettings.user
 *.binlog
+*.g.cs
 Chickensoft.Sync.Benchmarks/BenchmarkDotNet.Artifacts/

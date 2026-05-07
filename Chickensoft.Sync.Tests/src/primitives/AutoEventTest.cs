@@ -13,12 +13,16 @@ public sealed class AutoEventTest
 
   private sealed class EventSource
   {
-    public event Action<TestEventArgs>? TestEvent;
-    public void Fire(string message) => TestEvent?.Invoke(new TestEventArgs(message));
+    public event Action? TestEventZero;
+    public event Action<TestEventArgs>? TestEventOne;
+    public event Action<object, TestEventArgs>? TestEventTwo;
+    public void FireZero() => TestEventZero?.Invoke();
+    public void FireOne(string message) => TestEventOne?.Invoke(new TestEventArgs(message));
+    public void FireTwo(string message) => TestEventTwo?.Invoke(this, new TestEventArgs(message));
   }
 
   private static AutoEvent<TestEventArgs> Wrap(EventSource source) =>
-    new(h => source.TestEvent += h, h => source.TestEvent -= h);
+    new(h => source.TestEventOne += h, h => source.TestEventOne -= h);
 
   [Fact]
   public void Initializes()
@@ -33,7 +37,24 @@ public sealed class AutoEventTest
   }
 
   [Fact]
-  public void ForwardsEventToBindings()
+  public void ForwardsEventToBindingsWithParamsZero()
+  {
+    var source = new EventSource();
+    var autoEvent = new AutoEvent(
+      action => source.TestEventZero += action,
+      action => source.TestEventZero -= action
+    );
+    bool? received = null;
+
+    autoEvent.Bind().On(() => received = true);
+
+    source.FireZero();
+
+    received.ShouldBe(true);
+  }
+
+  [Fact]
+  public void ForwardsEventToBindingsWithParamsOne()
   {
     var source = new EventSource();
     var autoEvent = Wrap(source);
@@ -41,8 +62,31 @@ public sealed class AutoEventTest
 
     autoEvent.Bind().On(args => received = args.Message);
 
-    source.Fire("hello");
+    source.FireOne("hello");
 
+    received.ShouldBe("hello");
+  }
+
+  [Fact]
+  public void ForwardsEventToBindingsWithParamsTwo()
+  {
+    var source = new EventSource();
+    var autoEvent = new AutoEvent<object, TestEventArgs>(
+      action => source.TestEventTwo += action,
+      action => source.TestEventTwo -= action
+    );
+    string? received = null;
+    object? obj = null;
+
+    autoEvent.Bind().On((sender, args) =>
+    {
+      received = args.Message;
+      obj = sender;
+    });
+
+    source.FireTwo("hello");
+
+    obj.ShouldBe(source);
     received.ShouldBe("hello");
   }
 
@@ -58,11 +102,11 @@ public sealed class AutoEventTest
     {
       if (inCallback) { reentered = true; }
       inCallback = true;
-      if (args.Message == "first") { source.Fire("second"); }
+      if (args.Message == "first") { source.FireOne("second"); }
       inCallback = false;
     });
 
-    source.Fire("first");
+    source.FireOne("first");
 
     reentered.ShouldBeFalse();
   }
@@ -79,9 +123,9 @@ public sealed class AutoEventTest
       .On(args => all.Add(args.Message))
       .On(args => helloOnly.Add(args.Message), condition: args => args.Message == "hello");
 
-    source.Fire("hello");
-    source.Fire("world");
-    source.Fire("hello");
+    source.FireOne("hello");
+    source.FireOne("world");
+    source.FireOne("hello");
 
     all.ShouldBe(["hello", "world", "hello"]);
     helloOnly.ShouldBe(["hello", "hello"]);
@@ -98,7 +142,7 @@ public sealed class AutoEventTest
     autoEvent.Bind().On(args => messages1.Add(args.Message));
     autoEvent.Bind().On(args => messages2.Add(args.Message));
 
-    source.Fire("ping");
+    source.FireOne("ping");
 
     messages1.ShouldBe(["ping"]);
     messages2.ShouldBe(["ping"]);
@@ -114,12 +158,12 @@ public sealed class AutoEventTest
     var binding = autoEvent.Bind();
     binding.On(args => messages.Add(args.Message));
 
-    source.Fire("first");
+    source.FireOne("first");
     messages.ShouldBe(["first"]);
 
     binding.Dispose();
 
-    source.Fire("second");
+    source.FireOne("second");
     messages.ShouldBe(["first"]);
   }
 
@@ -133,13 +177,13 @@ public sealed class AutoEventTest
     using var binding = autoEvent.Bind();
     binding.On(args => messages.Add(args.Message));
 
-    source.Fire("a");
-    source.Fire("b");
+    source.FireOne("a");
+    source.FireOne("b");
     messages.ShouldBe(["a", "b"]);
     messages.Clear();
 
     autoEvent.ClearBindings();
-    source.Fire("c");
+    source.FireOne("c");
     messages.ShouldBeEmpty();
   }
 
@@ -152,12 +196,12 @@ public sealed class AutoEventTest
 
     autoEvent.Bind().On(args => messages.Add(args.Message));
 
-    source.Fire("before");
+    source.FireOne("before");
     messages.ShouldBe(["before"]);
 
     autoEvent.Dispose();
 
-    source.Fire("after");
+    source.FireOne("after");
     messages.ShouldBe(["before"]);
   }
 }
