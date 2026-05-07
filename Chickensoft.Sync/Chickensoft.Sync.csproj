@@ -30,7 +30,14 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/chickensoft-games/Sync.git</RepositoryUrl>
     <TransformOnBuild>true</TransformOnBuild>
+    <AfterTransform>AddGeneratedT4FilesToCompile;$(AfterTransform)</AfterTransform>
   </PropertyGroup>
+
+  <Target Name="AddGeneratedT4FilesToCompile">
+    <ItemGroup>
+      <Compile Include="@(GeneratedTemplates)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <None Include="../README.md" Pack="true" PackagePath="\" />
