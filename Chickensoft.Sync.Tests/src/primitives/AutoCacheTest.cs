@@ -273,7 +273,7 @@ public sealed class AutoCacheTest
     Should.Throw<ObjectDisposedException>(() => cache.Update(2));
   }
 
-  private class AllSameComparer : IEqualityComparer<int>
+  private sealed class AllSameComparer : IEqualityComparer<int>
   {
     public bool Equals(int x, int y) => true;
     public int GetHashCode(int obj) => 0;

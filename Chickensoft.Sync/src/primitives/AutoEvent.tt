@@ -1,0 +1,131 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ output extension=".g.cs" #>
+<#
+  const int maxArity = 16;
+#>
+#nullable enable
+namespace Chickensoft.Sync.Primitives;
+
+using System;
+using System.Diagnostics.CodeAnalysis;
+using Sync;
+<# for (int arity = 0; arity <= maxArity; arity++) {
+  var tp       = Enumerable.Range(1, arity).Select(i => "T" + i).ToArray();
+  var tpList    = string.Join(", ", tp);
+  var tpBrk     = arity > 0 ? "<" + tpList + ">" : "";
+  var argFields = string.Join(", ", tp.Select((t, i) => t + " Arg" + (i + 1)));
+  var argParams = string.Join(", ", tp.Select((t, i) => t + " arg" + (i + 1)));
+  var argValues = string.Join(", ", Enumerable.Range(1, arity).Select(i => "arg" + i));
+  var bcastArgs = string.Join(", ", Enumerable.Range(1, arity).Select(i => "b.Arg" + i));
+  var opArgs    = string.Join(", ", Enumerable.Range(1, arity).Select(i => "op.Arg" + i));
+  var actionType= arity > 0 ? "Action<" + tpList + ">" : "Action";
+  var funcType  = arity > 0 ? "Func<" + tpList + ", bool>" : "Func<bool>";
+  var subType   = "Action<" + actionType + ">";
+  var iCref     = arity > 0 ? "IAutoEvent{" + tpList + "}" : "IAutoEvent";
+  var classCref = arity > 0 ? "AutoEvent{" + tpList + "}" : "AutoEvent";
+#>
+
+/// <summary>
+/// <para>
+/// An observable adapter for a C# event that forwards event firings to
+/// subscribers through the sync pipeline.
+/// </para>
+/// </summary>
+<# for (int i = 1; i <= arity; i++) { #>
+/// <typeparam name="T<#= i #>">Type of argument <#= i #>.</typeparam>
+<# } #>
+public interface IAutoEvent<#= tpBrk #> :
+  IAutoObject<AutoEvent<#= tpBrk #>.Binding>;
+
+/// <inheritdoc cref="<#= iCref #>"/>
+public sealed class AutoEvent<#= tpBrk #> :
+  IAutoEvent<#= tpBrk #>,
+  IPerform<AutoEvent<#= tpBrk #>.RaiseOp>
+{
+  // Atomic operations
+  private readonly record struct RaiseOp(<#= argFields #>);
+
+  // Broadcasts
+  private readonly record struct RaiseBroadcast(<#= argFields #>);
+
+  /// <summary>
+  /// A binding to an <see cref="<#= classCref #>"/>.
+  /// </summary>
+  public class Binding : SyncBinding
+  {
+    internal Binding(ISyncSubject subject) : base(subject) { }
+
+    /// <summary>
+    /// Registers a callback that is invoked whenever the event is raised.
+    /// </summary>
+    /// <param name="callback">Callback to invoke.</param>
+    /// <param name="condition">Optional condition that must be true for the
+    /// callback to be invoked.</param>
+    /// <returns>This binding (for chaining).</returns>
+    [
+      SuppressMessage(
+        "Style",
+        "IDE0350",
+        Justification = "Implicit lambda with ref type won't compile"
+      )
+    ]
+    public Binding On(
+      <#= actionType #> callback, <#= funcType #>? condition = null
+    )
+    {
+      bool predicate(<#= argParams #>) => condition?.Invoke(<#= argValues #>) ?? true;
+
+      AddCallback(
+        (in RaiseBroadcast b) => callback(<#= bcastArgs #>),
+        (in RaiseBroadcast b) => predicate(<#= bcastArgs #>)
+      );
+
+      return this;
+    }
+  }
+
+  private readonly SyncSubject _subject;
+  private readonly <#= subType #> _unsubscribe;
+
+  /// <summary>
+  /// <para>
+  /// Creates a new auto event that subscribes to a C# event and forwards
+  /// firings to its bindings through the sync pipeline.
+  /// </para>
+  /// </summary>
+  /// <param name="subscribe">Action that subscribes the internal handler to
+  /// the source event (e.g., <c>h => myObj.MyEvent += h</c>).</param>
+  /// <param name="unsubscribe">Action that unsubscribes the internal handler
+  /// from the source event (e.g., <c>h => myObj.MyEvent -= h</c>).</param>
+  public AutoEvent(
+    <#= subType #> subscribe,
+    <#= subType #> unsubscribe
+  )
+  {
+    _subject = new SyncSubject(this);
+    _unsubscribe = unsubscribe;
+    subscribe(OnEventRaised);
+  }
+
+  private void OnEventRaised(<#= argParams #>) =>
+    _subject.Perform(new RaiseOp(<#= argValues #>));
+
+  /// <inheritdoc />
+  public Binding Bind() => new(_subject);
+
+  /// <inheritdoc />
+  public void ClearBindings() => _subject.ClearBindings();
+
+  /// <inheritdoc />
+  public void Dispose()
+  {
+    _unsubscribe(OnEventRaised);
+    _subject.Dispose();
+  }
+
+  void IPerform<RaiseOp>.Perform(in RaiseOp op) =>
+    _subject.Broadcast(new RaiseBroadcast(<#= opArgs #>));
+}
+<# } #>

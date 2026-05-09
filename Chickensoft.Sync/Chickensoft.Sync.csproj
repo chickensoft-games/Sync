@@ -29,12 +29,21 @@
 
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/chickensoft-games/Sync.git</RepositoryUrl>
+    <TransformOnBuild>true</TransformOnBuild>
+    <AfterTransform>AddGeneratedT4FilesToCompile;$(AfterTransform)</AfterTransform>
   </PropertyGroup>
+
+  <Target Name="AddGeneratedT4FilesToCompile">
+    <ItemGroup>
+      <Compile Include="@(GeneratedTemplates)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <None Include="../README.md" Pack="true" PackagePath="\" />
     <None Include="../LICENSE" Pack="true" PackagePath="\" />
     <None Include="./icon.png" Pack="true" PackagePath="" />
+    <T4Transform Include="**\*.tt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,5 +56,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="T4.BuildTools" Version="3.0.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

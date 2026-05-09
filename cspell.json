@@ -3,6 +3,7 @@
     "**/*.*"
   ],
   "ignorePaths": [
+    "**/*.tt",
     "**/*.tscn",
     "**/*.import",
     "**/badges/**/*.*",
