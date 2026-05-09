@@ -5,13 +5,14 @@
 <#
   const int maxArity = 16;
 #>
+#nullable enable
 namespace Chickensoft.Sync.Primitives;
 
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Sync;
 <# for (int arity = 0; arity <= maxArity; arity++) {
-  var tp        = Enumerable.Range(1, arity).Select(i => "T" + i).ToArray();
+  var tp       = Enumerable.Range(1, arity).Select(i => "T" + i).ToArray();
   var tpList    = string.Join(", ", tp);
   var tpBrk     = arity > 0 ? "<" + tpList + ">" : "";
   var argFields = string.Join(", ", tp.Select((t, i) => t + " Arg" + (i + 1)));
@@ -19,11 +20,11 @@ using Sync;
   var argValues = string.Join(", ", Enumerable.Range(1, arity).Select(i => "arg" + i));
   var bcastArgs = string.Join(", ", Enumerable.Range(1, arity).Select(i => "b.Arg" + i));
   var opArgs    = string.Join(", ", Enumerable.Range(1, arity).Select(i => "op.Arg" + i));
-  var actionType  = arity > 0 ? "Action<" + tpList + ">" : "Action";
-  var funcType    = arity > 0 ? "Func<" + tpList + ", bool>" : "Func<bool>";
-  var subType     = "Action<" + actionType + ">";
-  var iCref       = arity > 0 ? "IAutoEvent{" + tpList + "}" : "IAutoEvent";
-  var classCref   = arity > 0 ? "AutoEvent{" + tpList + "}" : "AutoEvent";
+  var actionType= arity > 0 ? "Action<" + tpList + ">" : "Action";
+  var funcType  = arity > 0 ? "Func<" + tpList + ", bool>" : "Func<bool>";
+  var subType   = "Action<" + actionType + ">";
+  var iCref     = arity > 0 ? "IAutoEvent{" + tpList + "}" : "IAutoEvent";
+  var classCref = arity > 0 ? "AutoEvent{" + tpList + "}" : "AutoEvent";
 #>
 
 /// <summary>
