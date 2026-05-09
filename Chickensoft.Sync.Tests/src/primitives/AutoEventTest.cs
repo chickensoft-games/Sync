@@ -100,9 +100,16 @@ public sealed class AutoEventTest
 
     autoEvent.Bind().On(args =>
     {
-      if (inCallback) { reentered = true; }
+      if (inCallback)
+      {
+        reentered = true;
+      }
       inCallback = true;
-      if (args.Message == "first") { source.FireOne("second"); }
+
+      if (args.Message == "first")
+      {
+        source.FireOne("second");
+      }
       inCallback = false;
     });
 
