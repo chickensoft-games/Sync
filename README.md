@@ -304,13 +304,13 @@ using var binding = autoChannel.Bind();
 
 binding
   .On<DogBarked>(
-    (bark) => Console.WriteLine($"{bark.DogName} barked with loudness {bark.Loudness}")
+    (in bark) => Console.WriteLine($"{bark.DogName} barked with loudness {bark.Loudness}")
   )
   .On<CatMeowed>(
-    (meow) => Console.WriteLine($"{meow.CatName} meowed. Hungry? {meow.IsHungry}")
+    (in meow) => Console.WriteLine($"{meow.CatName} meowed. Hungry? {meow.IsHungry}")
   )
   .On<TreatDispensed>(
-    (treat) => Console.WriteLine($"Dispensed treat: {treat.TreatType}")
+    (in treat) => Console.WriteLine($"Dispensed treat: {treat.TreatType}")
   );
 
 // Broadcast events - all subscribers hear them immediately
