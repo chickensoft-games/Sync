@@ -304,13 +304,13 @@ using var binding = autoChannel.Bind();
 
 binding
   .On<DogBarked>(
-    (bark) => Console.WriteLine($"{bark.DogName} barked with loudness {bark.Loudness}")
+    (in bark) => Console.WriteLine($"{bark.DogName} barked with loudness {bark.Loudness}")
   )
   .On<CatMeowed>(
-    (meow) => Console.WriteLine($"{meow.CatName} meowed. Hungry? {meow.IsHungry}")
+    (in meow) => Console.WriteLine($"{meow.CatName} meowed. Hungry? {meow.IsHungry}")
   )
   .On<TreatDispensed>(
-    (treat) => Console.WriteLine($"Dispensed treat: {treat.TreatType}")
+    (in treat) => Console.WriteLine($"Dispensed treat: {treat.TreatType}")
   );
 
 // Broadcast events - all subscribers hear them immediately
@@ -383,6 +383,68 @@ autoCache.Update(new Cat("Pickles"));
 autoCache.TryGetValue<Animal>(out var animal) // animal will be the Mouse - Hamtaro
 autoCache.TryGetValue<Dog>(out var dog) // animal will be the Dog - Cookie
 autoCache.TryGetValue<Cat>(out var cat) // animal will be the Cat - Pickles
+```
+
+## ⚡ AutoEvent
+
+`AutoEvent` is an observable adapter for a C# event. It subscribes to an event source and forwards invocations through the Sync pipeline, giving you reentrancy protection and the same fluent binding API as the rest of Sync's primitives.
+
+Multiple variants are available depending on the event's signature:
+
+| Type                      | Matches event signature                |
+|---------------------------|----------------------------------------|
+| `AutoEvent`               | `Action` (no args)                     |
+| `AutoEvent<T>`            | `Action<T>` (one arg)                  |
+| `AutoEvent<T1, T2>`       | `Action<T1, T2>` (two args)            |
+| `AutoEvent<T1, T2, T...>` | `Action<T1, T2, T...>` (up to 16 args) |
+
+```csharp
+public class Button
+{
+  public event Action<string>? Clicked;
+  public void Click(string label) => Clicked?.Invoke(label);
+}
+
+var button = new Button();
+
+// wrap the existing C# event
+var autoEvent = new AutoEvent<string>(
+  h => button.Clicked += h,   // subscribe
+  h => button.Clicked -= h    // unsubscribe
+);
+
+using var binding = autoEvent.Bind();
+
+binding.On(label => Console.WriteLine($"Button clicked: {label}"));
+
+button.Click("OK");    // Button clicked: OK
+button.Click("Cancel"); // Button clicked: Cancel
+```
+
+> [!NOTE]
+> Unlike `AutoValue<T>`, `AutoEvent` cannot broadcast the last value when a binding is first added. It only notifies subscribers when the underlying event fires.
+
+To wrap a two-argument event (such as a standard .NET `EventHandler<TEventArgs>` pattern):
+
+```csharp
+public class Sensor
+{
+  public event Action<object, SensorEventArgs>? Reading;
+  public void TakeReading(float value) => Reading?.Invoke(this, new SensorEventArgs(value));
+}
+
+var sensor = new Sensor();
+
+var autoEvent = new AutoEvent<object, SensorEventArgs>(
+  h => sensor.Reading += h,
+  h => sensor.Reading -= h
+);
+
+using var binding = autoEvent.Bind();
+
+binding.On((sender, args) => Console.WriteLine($"{sender.GetType()} - Reading: {args.Value}"));
+
+sensor.TakeReading(79); // Sensor - Reading: 79
 ```
 
 ## 🗑️ CompositeDisposable
