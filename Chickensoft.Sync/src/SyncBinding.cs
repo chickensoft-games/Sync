@@ -107,6 +107,7 @@ public abstract class SyncBinding : ISyncBinding
     Condition<TBroadcast>? condition = null
   ) where TBroadcast : struct
   {
+    // Note: when the SyncSubject disposes itself, it also disposes all related SyncBindings
     if (_isDisposed)
     { throw DisposedException; }
 
