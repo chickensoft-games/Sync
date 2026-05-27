@@ -107,7 +107,6 @@ public abstract class SyncBinding : ISyncBinding
     Condition<TBroadcast>? condition = null
   ) where TBroadcast : struct
   {
-    // Note: when the SyncSubject disposes itself, it also disposes all related SyncBindings
     if (_isDisposed)
     { throw DisposedException; }
 
@@ -172,7 +171,10 @@ public abstract class SyncBinding : ISyncBinding
   protected virtual void Cleanup()
   {
     _callbacks.Clear();
-    _subject!.RemoveBinding(this);
+    if (_subject is { IsDisposed: false })
+    {
+      _subject!.RemoveBinding(this);
+    }
     _subject = null;
   }
 

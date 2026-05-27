@@ -2,7 +2,6 @@ namespace Chickensoft.Sync;
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Chickensoft.Collections;
 
 /// <summary>
@@ -394,10 +393,7 @@ public sealed class SyncSubject : ISyncSubject
   private void Cleanup()
   {
     // clear references to other managed objects
-    foreach (var binding in _bindings.ToList())
-    {
-      binding.Dispose();
-    }
+    _bindings.Clear();
     _ops.Clear();
     _internalOps.Clear();
     _owner = null;
