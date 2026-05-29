@@ -171,7 +171,10 @@ public abstract class SyncBinding : ISyncBinding
   protected virtual void Cleanup()
   {
     _callbacks.Clear();
-    _subject!.RemoveBinding(this);
+    if (_subject is { IsDisposed: false })
+    {
+      _subject!.RemoveBinding(this);
+    }
     _subject = null;
   }
 
