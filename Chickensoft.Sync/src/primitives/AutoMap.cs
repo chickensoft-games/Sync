@@ -308,6 +308,7 @@ public sealed class AutoMap<TKey, TValue> :
       _map[key] = value;
 
       _subject.Broadcast(new UpdateBroadcast(key, existing, value));
+      _subject.Broadcast(new ModifyBroadcast());
       return;
     }
 

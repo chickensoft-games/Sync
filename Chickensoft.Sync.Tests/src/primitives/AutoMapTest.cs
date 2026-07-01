@@ -134,6 +134,39 @@ public sealed class AutoMapTest
   }
 
   [Fact]
+  public void AddBroadcastsUpdateForExistingValue()
+  {
+    var map = new AutoMap<int, string> { [1] = "one" };
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnUpdate((key, oldValue, newValue) =>
+      log.Add($"update {key} : {oldValue} -> {newValue}"));
+
+    map.Add(1, "uno");
+
+    map.Count.ShouldBe(1);
+    map[1].ShouldBe("uno");
+    log.ShouldBe(["update 1 : one -> uno"]);
+  }
+
+  [Fact]
+  public void AddBroadcastsModificationForExistingValue()
+  {
+    var map = new AutoMap<int, string> { [1] = "one" };
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    map.Add(1, "uno");
+
+    map.Count.ShouldBe(1);
+    map[1].ShouldBe("uno");
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
   public void RemoveWithValueBroadcasts()
   {
     var map = new AutoMap<int, string> { [1] = "one" };
