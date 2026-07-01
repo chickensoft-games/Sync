@@ -327,6 +327,7 @@ public sealed class AutoMap<TKey, TValue> :
       // perform an add instead
       _map.Add(key, value);
       _subject.Broadcast(new AddBroadcast(key, value));
+      _subject.Broadcast(new ModifyBroadcast());
       return;
     }
 

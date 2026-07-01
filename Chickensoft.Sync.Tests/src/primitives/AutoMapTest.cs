@@ -37,6 +37,71 @@ public sealed class AutoMapTest
   }
 
   [Fact]
+  public void IndexerBroadcastsAddForNewEntry()
+  {
+    var map = new AutoMap<int, string>();
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnAdd((key, value) => log.Add($"add {key} -> {value}"));
+
+    map[1] = "one";
+
+    map.Count.ShouldBe(1);
+    map[1].ShouldBe("one");
+    log.ShouldBe(["add 1 -> one"]);
+  }
+
+  [Fact]
+  public void IndexerBroadcastsModificationForNewEntry()
+  {
+    var map = new AutoMap<int, string>();
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    map[1] = "one";
+
+    map.Count.ShouldBe(1);
+    map[1].ShouldBe("one");
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
+  public void IndexerBroadcastsUpdateForExistingEntry()
+  {
+    var map = new AutoMap<int, string> { [1] = "one" };
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnUpdate((key, oldValue, newValue) =>
+      log.Add($"update {key} : {oldValue} -> {newValue}"));
+
+    map[1] = "uno";
+
+    map.Count.ShouldBe(1);
+    map[1].ShouldBe("uno");
+    log.ShouldBe(["update 1 : one -> uno"]);
+  }
+
+  [Fact]
+  public void IndexerBroadcastsModificationForExistingEntry()
+  {
+    var map = new AutoMap<int, string> { [1] = "one" };
+    var log = new List<string>();
+    using var binding = map.Bind();
+
+    binding.OnModify(() => log.Add($"modify"));
+
+    map[1] = "uno";
+
+    map.Count.ShouldBe(1);
+    map[1].ShouldBe("uno");
+    log.ShouldBe(["modify"]);
+  }
+
+  [Fact]
   public void AddBroadcasts()
   {
     var map = new AutoMap<int, string>();
@@ -65,39 +130,6 @@ public sealed class AutoMapTest
 
     map.Count.ShouldBe(1);
     map[1].ShouldBe("one");
-    log.ShouldBe(["modify"]);
-  }
-
-  [Fact]
-  public void UpdateBroadcasts()
-  {
-    var map = new AutoMap<int, string> { [1] = "one" };
-    var log = new List<string>();
-    using var binding = map.Bind();
-
-    binding.OnUpdate((key, oldValue, newValue) =>
-      log.Add($"update {key} : {oldValue} -> {newValue}"));
-
-    map[1] = "uno";
-
-    map.Count.ShouldBe(1);
-    map[1].ShouldBe("uno");
-    log.ShouldBe(["update 1 : one -> uno"]);
-  }
-
-  [Fact]
-  public void UpdateBroadcastsModification()
-  {
-    var map = new AutoMap<int, string> { [1] = "one" };
-    var log = new List<string>();
-    using var binding = map.Bind();
-
-    binding.OnModify(() => log.Add($"modify"));
-
-    map[1] = "uno";
-
-    map.Count.ShouldBe(1);
-    map[1].ShouldBe("uno");
     log.ShouldBe(["modify"]);
   }
 
