@@ -303,13 +303,9 @@ public sealed class AutoMap<TKey, TValue> :
     var key = op.Key;
     var value = op.Value;
 
-    if (_map.TryGetValue(key, out var existing))
+    if (_map.ContainsKey(key))
     {
-      _map[key] = value;
-
-      _subject.Broadcast(new UpdateBroadcast(key, existing, value));
-      _subject.Broadcast(new ModifyBroadcast());
-      return;
+      throw new ArgumentException($"AutoMap already contains key {key}");
     }
 
     _map.Add(key, value);

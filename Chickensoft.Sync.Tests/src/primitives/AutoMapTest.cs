@@ -134,7 +134,7 @@ public sealed class AutoMapTest
   }
 
   [Fact]
-  public void AddBroadcastsUpdateForExistingValue()
+  public void AddThrowsForExistingValue()
   {
     var map = new AutoMap<int, string> { [1] = "one" };
     var log = new List<string>();
@@ -143,27 +143,10 @@ public sealed class AutoMapTest
     binding.OnUpdate((key, oldValue, newValue) =>
       log.Add($"update {key} : {oldValue} -> {newValue}"));
 
-    map.Add(1, "uno");
-
-    map.Count.ShouldBe(1);
-    map[1].ShouldBe("uno");
-    log.ShouldBe(["update 1 : one -> uno"]);
-  }
-
-  [Fact]
-  public void AddBroadcastsModificationForExistingValue()
-  {
-    var map = new AutoMap<int, string> { [1] = "one" };
-    var log = new List<string>();
-    using var binding = map.Bind();
-
-    binding.OnModify(() => log.Add($"modify"));
-
-    map.Add(1, "uno");
-
-    map.Count.ShouldBe(1);
-    map[1].ShouldBe("uno");
-    log.ShouldBe(["modify"]);
+    Should.Throw<ArgumentException>(
+      () => map.Add(1, "uno"),
+      "AutoMap already contains key 1"
+    );
   }
 
   [Fact]
@@ -407,15 +390,6 @@ public sealed class AutoMapTest
     );
     map.Count.ShouldBe(1);
     log.ShouldBe([]);
-  }
-
-  [Fact]
-  public void AddUpdatesIfAlreadyExists()
-  {
-    var map = new AutoMap<int, string> { [1] = "one" };
-    map.Add(1, "uno");
-    map.Count.ShouldBe(1);
-    map[1].ShouldBe("uno");
   }
 
   [Fact]
