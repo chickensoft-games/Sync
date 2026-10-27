@@ -389,4 +389,36 @@ public sealed class SyncSubjectTest
 
     calls.ShouldBe(1);
   }
+
+  [Fact]
+  public void ClearPreservesOrderOfPendingBindingOps()
+  {
+    var subject = BuildSubject();
+
+    var binding1 = new Mock<ISyncBinding>();
+    var binding2 = new Mock<ISyncBinding>();
+
+    binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback((in int value) =>
+      {
+        if (value == 1)
+        {
+          subject.Perform(2);
+          subject.Perform(3);
+          subject.Clear();
+          subject.AddBinding(binding2.Object);
+          subject.Perform(4);
+        }
+      });
+
+    subject.AddBinding(binding1.Object);
+
+    subject.Perform(1);
+
+    binding1.Verify(b => b.InvokeCallbacks(1), Times.Once);
+    binding1.Verify(b => b.InvokeCallbacks(2), Times.Never);
+    binding1.Verify(b => b.InvokeCallbacks(3), Times.Never);
+    binding1.Verify(b => b.InvokeCallbacks(4), Times.Once);
+    binding2.Verify(b => b.InvokeCallbacks(4), Times.Once);
+  }
 }
