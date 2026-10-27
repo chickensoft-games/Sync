@@ -28,4 +28,3 @@ public sealed class DisposableExtensionsTest
     returned.ShouldBe(disposable.Object);
   }
 }
-

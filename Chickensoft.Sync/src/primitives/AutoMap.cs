@@ -8,9 +8,10 @@ using System.Diagnostics.CodeAnalysis;
 /// <summary>A readonly reference to an observable dictionary (map).</summary>
 /// <typeparam name="TKey">Key type.</typeparam>
 /// <typeparam name="TValue">Value type.</typeparam>
-public interface IAutoMap<TKey, TValue> :
-    IAutoObject<AutoMap<TKey, TValue>.Binding>,
-    IReadOnlyDictionary<TKey, TValue> where TKey : notnull
+public interface IAutoMap<TKey, TValue>
+  : IAutoObject<AutoMap<TKey, TValue>.Binding>,
+    IReadOnlyDictionary<TKey, TValue>
+  where TKey : notnull
 {
   /// <summary>
   /// Equality comparer used to determine key equality.
@@ -32,8 +33,8 @@ public interface IAutoMap<TKey, TValue> :
 /// </summary>
 /// <typeparam name="TKey">Key type.</typeparam>
 /// <typeparam name="TValue">Value type.</typeparam>
-public sealed class AutoMap<TKey, TValue> :
-    IAutoMap<TKey, TValue>,
+public sealed class AutoMap<TKey, TValue>
+  : IAutoMap<TKey, TValue>,
     ICollection<KeyValuePair<TKey, TValue>>,
     IDictionary<TKey, TValue>,
     IPerform<AutoMap<TKey, TValue>.AddOp>,
@@ -41,22 +42,32 @@ public sealed class AutoMap<TKey, TValue> :
     IPerform<AutoMap<TKey, TValue>.RemoveOp>,
     IPerform<AutoMap<TKey, TValue>.RemoveMatchingOp>,
     IPerform<AutoMap<TKey, TValue>.ClearOp>
-    where TKey : notnull
+  where TKey : notnull
 {
   // Atomic operations
   private readonly record struct AddOp(TKey Key, TValue Value);
+
   private readonly record struct UpdateOp(TKey Key, TValue Value);
+
   private readonly record struct RemoveOp(TKey Key);
+
   private readonly record struct RemoveMatchingOp(TKey Key, TValue Value);
+
   private readonly record struct ClearOp();
 
   // Binding broadcasts
   private readonly record struct AddBroadcast(TKey Key, TValue Value);
+
   private readonly record struct UpdateBroadcast(
-    TKey Key, TValue Previous, TValue Value
+    TKey Key,
+    TValue Previous,
+    TValue Value
   );
+
   private readonly record struct RemoveBroadcast(TKey Key, TValue Value);
+
   private readonly record struct ClearBroadcast();
+
   private readonly record struct ModifyBroadcast();
 
   /// <summary>
@@ -64,7 +75,8 @@ public sealed class AutoMap<TKey, TValue> :
   /// </summary>
   public sealed class Binding : SyncBinding
   {
-    internal Binding(ISyncSubject subject) : base(subject) { }
+    internal Binding(ISyncSubject subject)
+      : base(subject) { }
 
     /// <summary>
     /// Registers a callback to be invoked when an item is added to the map.
@@ -200,7 +212,8 @@ public sealed class AutoMap<TKey, TValue> :
   /// <summary>
   /// Create a new observable <see cref="AutoMap{TKey, TValue}" />.
   /// </summary>
-  public AutoMap() : this(null, null) { }
+  public AutoMap()
+    : this(null, null) { }
 
   /// <summary>
   /// Create a new observable <see cref="AutoMap{TKey, TValue}" /> containing
@@ -244,9 +257,10 @@ public sealed class AutoMap<TKey, TValue> :
   #region Enumeration
 
   IEnumerator IEnumerable.GetEnumerator() => _map.GetEnumerator();
-  IEnumerator<KeyValuePair<TKey, TValue>>
-    IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
-      _map.GetEnumerator();
+
+  IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<
+    KeyValuePair<TKey, TValue>
+  >.GetEnumerator() => _map.GetEnumerator();
 
   #endregion Enumeration
 
@@ -263,9 +277,8 @@ public sealed class AutoMap<TKey, TValue> :
   public void Clear() => _subject.Perform(new ClearOp());
 
   /// <inheritdoc />
-  public bool Contains(KeyValuePair<TKey, TValue> item) => (_map as ICollection<
-    KeyValuePair<TKey, TValue>
-  >).Contains(item);
+  public bool Contains(KeyValuePair<TKey, TValue> item) =>
+    (_map as ICollection<KeyValuePair<TKey, TValue>>).Contains(item);
 
   /// <inheritdoc />
   public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) =>
@@ -276,23 +289,23 @@ public sealed class AutoMap<TKey, TValue> :
 
   bool IDictionary<TKey, TValue>.Remove(TKey key) =>
     throw new NotSupportedException(
-      "Cannot support this method since it would require a return value, but " +
-      "the removal operation may be deferred if the map is currently busy. " +
-      "Please use `void Remove(TKey key)` instead."
+      "Cannot support this method since it would require a return value, but "
+        + "the removal operation may be deferred if the map is currently busy. "
+        + "Please use `void Remove(TKey key)` instead."
     );
 
   /// <inheritdoc />
-  public void Remove(KeyValuePair<TKey, TValue> item) => _subject.Perform(
-    new RemoveMatchingOp(item.Key, item.Value)
-  );
+  public void Remove(KeyValuePair<TKey, TValue> item) =>
+    _subject.Perform(new RemoveMatchingOp(item.Key, item.Value));
 
   bool ICollection<KeyValuePair<TKey, TValue>>.Remove(
     KeyValuePair<TKey, TValue> item
-  ) => throw new NotSupportedException(
-    "Cannot support this method since it would require a return value, but " +
-    "the removal operation may be deferred if the map is currently busy. " +
-    "Please use `void Remove(KeyValuePair<TKey, TValue> item)` instead."
-  );
+  ) =>
+    throw new NotSupportedException(
+      "Cannot support this method since it would require a return value, but "
+        + "the removal operation may be deferred if the map is currently busy. "
+        + "Please use `void Remove(KeyValuePair<TKey, TValue> item)` instead."
+    );
 
   #endregion CollectionAndDictionary
 
@@ -353,8 +366,9 @@ public sealed class AutoMap<TKey, TValue> :
     var value = op.Value;
 
     if (
-      !(_map as ICollection<KeyValuePair<TKey, TValue>>)
-          .Contains(new KeyValuePair<TKey, TValue>(key, value))
+      !(_map as ICollection<KeyValuePair<TKey, TValue>>).Contains(
+        new KeyValuePair<TKey, TValue>(key, value)
+      )
     )
     {
       return;
@@ -370,7 +384,9 @@ public sealed class AutoMap<TKey, TValue> :
   void IPerform<ClearOp>.Perform(in ClearOp op)
   {
     if (_map.Count == 0)
-    { return; }
+    {
+      return;
+    }
 
     _map.Clear();
 
@@ -390,8 +406,7 @@ public sealed class AutoMap<TKey, TValue> :
   /// </summary>
   public struct KeyEnumerator : IEnumerator<TKey>
   {
-    private Dictionary<TKey, TValue>.KeyCollection.Enumerator
-      _enumerator;
+    private Dictionary<TKey, TValue>.KeyCollection.Enumerator _enumerator;
 
     /// <summary>
     /// Create a new <see cref="KeyEnumerator" />.
@@ -432,8 +447,7 @@ public sealed class AutoMap<TKey, TValue> :
   /// </summary>
   public struct ValueEnumerator : IEnumerator<TValue>
   {
-    private Dictionary<TKey, TValue>.ValueCollection.Enumerator
-      _enumerator;
+    private Dictionary<TKey, TValue>.ValueCollection.Enumerator _enumerator;
 
     /// <summary>
     /// Create a new <see cref="ValueEnumerator" />.
@@ -464,8 +478,10 @@ public sealed class AutoMap<TKey, TValue> :
     /// <summary>
     /// Returns the underlying enumerator to support efficient iteration with foreach.
     /// </summary>
-    public Dictionary<TKey, TValue>.ValueCollection.Enumerator
-      GetEnumerator() => _enumerator;
+    public Dictionary<
+      TKey,
+      TValue
+    >.ValueCollection.Enumerator GetEnumerator() => _enumerator;
   }
 
 #pragma warning restore IDE0251

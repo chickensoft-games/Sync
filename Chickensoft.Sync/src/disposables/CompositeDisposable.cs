@@ -17,6 +17,7 @@ public sealed class CompositeDisposable : ICollection<IDisposable>, IDisposable
   public int Count => _disposables.Count;
 
   bool ICollection<IDisposable>.IsReadOnly => false;
+
   void ICollection<IDisposable>.Add(IDisposable disposable) => Add(disposable);
 
   /// <summary>Adds a disposable to the <see cref="CompositeDisposable"/>, or disposes the disposable if the <see cref="CompositeDisposable"/> has already been disposed.</summary>
@@ -36,7 +37,8 @@ public sealed class CompositeDisposable : ICollection<IDisposable>, IDisposable
   /// <summary>Determines whether the <see cref="CompositeDisposable"/> contains a specific disposable.</summary>
   /// <param name="disposable">The disposable to search for.</param>
   /// <returns><see langword="true"/> if the disposable was found; otherwise, <see langword="false"/>.</returns>
-  public bool Contains(IDisposable disposable) => _disposables.Contains(disposable);
+  public bool Contains(IDisposable disposable) =>
+    _disposables.Contains(disposable);
 
   /// <summary>Removes and disposes the specified disposable from the <see cref="CompositeDisposable"/>.</summary>
   /// <param name="disposable">The disposable to remove.</param>
@@ -65,11 +67,14 @@ public sealed class CompositeDisposable : ICollection<IDisposable>, IDisposable
   /// <summary>Copies the disposables contained in the <see cref="CompositeDisposable"/> to an array, starting at a particular array index.</summary>
   /// <param name="array">The array to copy the contained disposables to.</param>
   /// <param name="arrayIndex">The zero-based index at which copying begins.</param>
-  public void CopyTo(IDisposable[] array, int arrayIndex) => _disposables.CopyTo(array, arrayIndex);
+  public void CopyTo(IDisposable[] array, int arrayIndex) =>
+    _disposables.CopyTo(array, arrayIndex);
 
   /// <summary>Returns an enumerator that iterates through the <see cref="CompositeDisposable"/>.</summary>
   /// <returns>An enumerator to iterate over the disposables.</returns>
-  public IEnumerator<IDisposable> GetEnumerator() => _disposables.GetEnumerator();
+  public IEnumerator<IDisposable> GetEnumerator() =>
+    _disposables.GetEnumerator();
+
   IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
   /// <summary>Disposes all disposables in the <see cref="CompositeDisposable"/> and clears the <see cref="CompositeDisposable"/>.</summary>

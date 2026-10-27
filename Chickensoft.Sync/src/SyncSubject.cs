@@ -50,7 +50,7 @@ public interface ISyncSubject : IDisposable
   /// <typeparam name="TBroadcast">The type of broadcast to send.</typeparam>
   /// <param name="broadcast">The broadcast instance to send.</param>
   void Perform<TBroadcast>(in TBroadcast broadcast)
-      where TBroadcast : struct;
+    where TBroadcast : struct;
 
   /// <summary>
   /// Clears all pending operations immediately. Safe to call any time before
@@ -72,7 +72,8 @@ public interface ISyncSubject : IDisposable
 /// operations complete when a new one is added.
 /// </para>
 /// </summary>
-public interface IPerform<TOp> where TOp : struct
+public interface IPerform<TOp>
+  where TOp : struct
 {
   /// <summary>
   /// <para>
@@ -120,7 +121,8 @@ public interface IPerformAnyOperation
   /// </para>
   /// <seealso cref="IPerform{T}.Perform(in T)"/>
   /// </summary>
-  void Perform<TOp>(in TOp op) where TOp : struct;
+  void Perform<TOp>(in TOp op)
+    where TOp : struct;
 }
 
 /// <summary>
@@ -156,7 +158,7 @@ public sealed class SyncSubject : ISyncSubject
     REMOVE_BINDING,
     CLEAR_BINDINGS,
     PERFORM,
-    DISPOSE
+    DISPOSE,
   }
 
   internal record struct INTERNAL_OP(
@@ -211,7 +213,9 @@ public sealed class SyncSubject : ISyncSubject
   public void AddBinding(ISyncBinding binding)
   {
     if (_isDisposed)
-    { throw DisposedException; }
+    {
+      throw DisposedException;
+    }
 
     _internalOps.Enqueue(
       new INTERNAL_OP(INTERNAL_OP_TYPE.ADD_BINDING, Binding: binding)
@@ -224,7 +228,9 @@ public sealed class SyncSubject : ISyncSubject
   public void RemoveBinding(ISyncBinding binding)
   {
     if (_isDisposed)
-    { throw DisposedException; }
+    {
+      throw DisposedException;
+    }
 
     _internalOps.Enqueue(
       new INTERNAL_OP(INTERNAL_OP_TYPE.REMOVE_BINDING, Binding: binding)
@@ -237,7 +243,9 @@ public sealed class SyncSubject : ISyncSubject
   public void ClearBindings()
   {
     if (_isDisposed)
-    { throw DisposedException; }
+    {
+      throw DisposedException;
+    }
 
     _internalOps.Enqueue(new INTERNAL_OP(INTERNAL_OP_TYPE.CLEAR_BINDINGS));
 
@@ -245,10 +253,13 @@ public sealed class SyncSubject : ISyncSubject
   }
 
   /// <inheritdoc />
-  public void Perform<TOp>(in TOp op) where TOp : struct
+  public void Perform<TOp>(in TOp op)
+    where TOp : struct
   {
     if (_isDisposed)
-    { throw DisposedException; }
+    {
+      throw DisposedException;
+    }
 
     if (_isBusy)
     {
@@ -268,7 +279,9 @@ public sealed class SyncSubject : ISyncSubject
   public void Clear()
   {
     if (_isDisposed)
-    { throw DisposedException; }
+    {
+      throw DisposedException;
+    }
 
     _ops.Clear();
     RemovePendingPerformOps();
@@ -292,7 +305,9 @@ public sealed class SyncSubject : ISyncSubject
   private void Process()
   {
     if (_isBusy)
-    { return; } // already busy, no re-entry allowed
+    {
+      return;
+    } // already busy, no re-entry allowed
 
     _isBusy = true;
 
@@ -336,7 +351,7 @@ public sealed class SyncSubject : ISyncSubject
   // overload for first operation optimization to keep it purely on the stack
   // don't call this if _isBusy is true
   private void Process<TOp>(in TOp op)
-      where TOp : struct
+    where TOp : struct
   {
     _isBusy = true;
 
@@ -360,7 +375,7 @@ public sealed class SyncSubject : ISyncSubject
   }
 
   private void HandleValue<TOp>(in TOp op)
-      where TOp : struct
+    where TOp : struct
   {
     // allow the object which owns us to handle the value and update its state
     // in a single atomic operation
@@ -381,10 +396,12 @@ public sealed class SyncSubject : ISyncSubject
   /// <see cref="IPerform{TBroadcast}.Perform(in TBroadcast)" />.
   /// </summary>
   public void Broadcast<TBroadcast>(in TBroadcast broadcast)
-      where TBroadcast : struct
+    where TBroadcast : struct
   {
     if (_isDisposed)
-    { throw DisposedException; }
+    {
+      throw DisposedException;
+    }
 
     var wasBusy = _isBusy;
 
@@ -451,7 +468,8 @@ public sealed class SyncSubject : ISyncSubject
     {
       Target = target;
     }
+
     public readonly void HandleValue<TValue>(in TValue value)
-        where TValue : struct => Target.HandleValue(in value);
+      where TValue : struct => Target.HandleValue(in value);
   }
 }

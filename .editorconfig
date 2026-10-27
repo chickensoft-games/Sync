@@ -47,6 +47,7 @@ indent_size = 2
 insert_final_newline = true
 trim_trailing_whitespace = true
 end_of_line = lf
+max_line_length = 80
 
 ##########################################
 # File Extension Settings
@@ -413,3 +414,7 @@ dotnet_diagnostic.IDE0010.severity = none
 dotnet_diagnostic.IDE0062.severity = warning
 # Don't make me use properties if I don't want to.
 dotnet_diagnostic.IDE0032.severity = none
+# implicit lambda with ref type breaks in our .net
+dotnet_diagnostic.IDE0350.severity = none
+# collection initialization simplification isn't supported in our .net
+dotnet_diagnostic.IDE0028.severity = none

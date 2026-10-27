@@ -3,12 +3,12 @@ namespace Chickensoft.Sync.Primitives;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 /// <summary>A readonly reference to an observable set.</summary>
 /// <typeparam name="T">Item type.</typeparam>
-public interface IAutoSet<T> :
-  IAutoObject<AutoSet<T>.Binding>, IReadOnlyCollection<T>
+public interface IAutoSet<T>
+  : IAutoObject<AutoSet<T>.Binding>,
+    IReadOnlyCollection<T>
 {
   /// <summary>
   /// Equality comparer used to determine item equality (and hashing).
@@ -42,18 +42,25 @@ public interface IAutoSet<T> :
 /// </para>
 /// </summary>
 /// <typeparam name="T">Item type.</typeparam>
-public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
+public sealed class AutoSet<T>
+  : IAutoSet<T>,
+    ICollection<T>,
     IPerform<AutoSet<T>.AddOp>,
     IPerform<AutoSet<T>.RemoveOp>,
     IPerform<AutoSet<T>.ClearOp>
 {
   private readonly record struct AddOp(T Item);
+
   private readonly record struct RemoveOp(T Item);
+
   private readonly record struct ClearOp();
 
   private readonly record struct AddBroadcast(T Item);
+
   private readonly record struct RemoveBroadcast(T Item);
+
   private readonly record struct ClearBroadcast();
+
   private readonly record struct ModifyBroadcast();
 
   /// <summary>
@@ -61,7 +68,8 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
   /// </summary>
   public sealed class Binding : SyncBinding
   {
-    internal Binding(ISyncSubject subject) : base(subject) { }
+    internal Binding(ISyncSubject subject)
+      : base(subject) { }
 
     /// <summary>
     /// Registers a callback to be invoked when an item is added to the set.
@@ -82,13 +90,6 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     /// <param name="callback">Callback to be invoked.</param>
     /// <typeparam name="TDerived">Subtype of item to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
-    [
-      SuppressMessage(
-        "Style",
-        "IDE0350",
-        Justification = "Implicit lambda with ref type won't compile"
-      )
-    ]
     public Binding OnAdd<TDerived>(Action<TDerived> callback)
       where TDerived : T
     {
@@ -119,13 +120,6 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
     /// <param name="callback">Callback to be invoked.</param>
     /// <typeparam name="TDerived">Subtype of item to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
-    [
-      SuppressMessage(
-        "Style",
-        "IDE0350",
-        Justification = "Implicit lambda with ref type won't compile"
-      )
-    ]
     public Binding OnRemove<TDerived>(Action<TDerived> callback)
       where TDerived : T
     {
@@ -170,7 +164,8 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
   /// <summary>
   /// Creates a new observable <see cref="AutoSet{T}" />.
   /// </summary>
-  public AutoSet() : this(null) { }
+  public AutoSet()
+    : this(null) { }
 
   /// <summary>
   /// Creates a new observable <see cref="AutoSet{T}" /> containing the
@@ -228,11 +223,12 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
   /// <inheritdoc />
   public void Remove(T item) => _subject.Perform(new RemoveOp(item));
 
-  bool ICollection<T>.Remove(T item) => throw new NotSupportedException(
-    "Cannot support this method since it would require a return value, but " +
-    "the removal operation may be deferred if the set is currently busy. " +
-    "Please use `void Remove(T item)` instead."
-  );
+  bool ICollection<T>.Remove(T item) =>
+    throw new NotSupportedException(
+      "Cannot support this method since it would require a return value, but "
+        + "the removal operation may be deferred if the set is currently busy. "
+        + "Please use `void Remove(T item)` instead."
+    );
 
   #endregion ICollection<T>
 
@@ -276,7 +272,9 @@ public sealed class AutoSet<T> : IAutoSet<T>, ICollection<T>,
   void IPerform<ClearOp>.Perform(in ClearOp operation)
   {
     if (_set.Count == 0)
-    { return; }
+    {
+      return;
+    }
 
     _set.Clear();
 

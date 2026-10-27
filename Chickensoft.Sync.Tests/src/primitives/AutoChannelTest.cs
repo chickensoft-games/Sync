@@ -6,6 +6,7 @@ using Sync.Primitives;
 public sealed class AutoChannelTest
 {
   private readonly record struct TestValue(int Value);
+
   private readonly record struct TestMessage(string Text);
 
   [Fact]
@@ -14,8 +15,7 @@ public sealed class AutoChannelTest
     var channel = new AutoChannel();
     var received = false;
 
-    channel.Bind()
-      .On((in int v) => received = true);
+    channel.Bind().On((in int v) => received = true);
 
     received.ShouldBeFalse();
   }
@@ -27,23 +27,26 @@ public sealed class AutoChannelTest
     var inCallback = false;
     var reentered = false;
 
-    channel.Bind()
-      .On((in int v) =>
-      {
-        if (inCallback)
+    channel
+      .Bind()
+      .On(
+        (in int v) =>
         {
-          reentered = true; // signals immediate (re-entrant) delivery
+          if (inCallback)
+          {
+            reentered = true; // signals immediate (re-entrant) delivery
+          }
+
+          inCallback = true;
+
+          if (v == 1)
+          {
+            channel.Send(2); // attempt re-entrant send
+          }
+
+          inCallback = false;
         }
-
-        inCallback = true;
-
-        if (v == 1)
-        {
-          channel.Send(2); // attempt re-entrant send
-        }
-
-        inCallback = false;
-      });
+      );
 
     channel.Send(1);
 
@@ -56,8 +59,7 @@ public sealed class AutoChannelTest
     var channel = new AutoChannel();
     var values = new List<int>();
 
-    channel.Bind()
-      .On((in int v) => values.Add(v));
+    channel.Bind().On((in int v) => values.Add(v));
 
     channel.Send(5);
     channel.Send(10);
@@ -73,7 +75,8 @@ public sealed class AutoChannelTest
     var channel = new AutoChannel();
     var values = new List<object>();
 
-    channel.Bind()
+    channel
+      .Bind()
       .On((in int v) => values.Add(v))
       .On((in double v) => values.Add(v))
       .On((in TestValue v) => values.Add(v))
@@ -87,7 +90,6 @@ public sealed class AutoChannelTest
     values.ShouldBe([42, 3.14, new TestValue(100), new TestMessage("hello")]);
   }
 
-
   [Fact]
   public void ConditionalCallbacks()
   {
@@ -95,12 +97,10 @@ public sealed class AutoChannelTest
     var values = new List<int>();
     var evenValues = new List<int>();
 
-    channel.Bind()
+    channel
+      .Bind()
       .On((in int v) => values.Add(v))
-      .On(
-        (in int v) => evenValues.Add(v),
-        condition: v => v % 2 == 0
-      );
+      .On((in int v) => evenValues.Add(v), condition: v => v % 2 == 0);
 
     channel.Send(1);
     channel.Send(2);
@@ -120,14 +120,11 @@ public sealed class AutoChannelTest
     var values2 = new List<int>();
     var values3 = new List<int>();
 
-    channel.Bind()
-      .On((in int v) => values1.Add(v));
+    channel.Bind().On((in int v) => values1.Add(v));
 
-    channel.Bind()
-      .On((in int v) => values2.Add(v));
+    channel.Bind().On((in int v) => values2.Add(v));
 
-    channel.Bind()
-      .On((in int v) => values3.Add(v));
+    channel.Bind().On((in int v) => values3.Add(v));
 
     channel.Send(7);
     channel.Send(14);

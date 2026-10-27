@@ -8,7 +8,8 @@ using Xunit;
 
 public sealed class SyncSubjectTest
 {
-  public sealed class TestOwner<T> : IPerform<T> where T : struct
+  public sealed class TestOwner<T> : IPerform<T>
+    where T : struct
   {
     public SyncSubject Subject { get; set; } = default!;
 
@@ -17,34 +18,36 @@ public sealed class SyncSubjectTest
     public void Perform(in T op) => Action(Subject, op);
   }
 
-  public sealed class TestOwnerAny :
-    IPerformAnyOperation,
-    IPerform<TestOwnerAny.TestOp1>,
-    IPerform<TestOwnerAny.TestOp2>
+  public sealed class TestOwnerAny
+    : IPerformAnyOperation,
+      IPerform<TestOwnerAny.TestOp1>,
+      IPerform<TestOwnerAny.TestOp2>
   {
     public readonly record struct TestOp1;
+
     public readonly record struct TestOp2;
+
     public SyncSubject Subject { get; set; } = default!;
 
     public required Action<SyncSubject, object> Action { get; set; }
     public required Action<SyncSubject, TestOp1> TestAction1 { get; init; }
     public required Action<SyncSubject, TestOp2> TestAction2 { get; init; }
 
-    public void Perform<TOp>(in TOp op) where TOp : struct => Action(Subject, op);
+    public void Perform<TOp>(in TOp op)
+      where TOp : struct => Action(Subject, op);
+
     public void Perform(in TestOp1 op) => TestAction1(Subject, op);
+
     public void Perform(in TestOp2 op) => TestAction2(Subject, op);
   }
 
-  public TestOwner<int> Nop => new()
-  {
-    Action = (_, __) => { }
-  };
+  public TestOwner<int> Nop => new() { Action = (_, __) => { } };
 
   public SyncSubject BuildSubject()
   {
     var owner = new TestOwner<int>
     {
-      Action = (subj, op) => subj.Broadcast(op)
+      Action = (subj, op) => subj.Broadcast(op),
     };
     var subject = new SyncSubject(owner);
     owner.Subject = subject;
@@ -119,18 +122,21 @@ public sealed class SyncSubjectTest
 
     var calls = 0;
 
-    binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) =>
-      {
-        calls++;
-
-        if (calls == 1)
+    binding1
+      .Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback(
+        (in int value) =>
         {
-          subject.AddBinding(binding2.Object);
-          // this should not be available yet
-          subject._bindings.ShouldNotContain(binding2.Object);
+          calls++;
+
+          if (calls == 1)
+          {
+            subject.AddBinding(binding2.Object);
+            // this should not be available yet
+            subject._bindings.ShouldNotContain(binding2.Object);
+          }
         }
-      });
+      );
 
     subject.AddBinding(binding1.Object);
     subject.Perform(1);
@@ -148,18 +154,21 @@ public sealed class SyncSubjectTest
 
     var calls = 0;
 
-    binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) =>
-      {
-        calls++;
-
-        if (calls == 1)
+    binding1
+      .Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback(
+        (in int value) =>
         {
-          subject.RemoveBinding(binding2.Object);
-          // this should not be removed yet
-          subject._bindings.ShouldContain(binding2.Object);
+          calls++;
+
+          if (calls == 1)
+          {
+            subject.RemoveBinding(binding2.Object);
+            // this should not be removed yet
+            subject._bindings.ShouldContain(binding2.Object);
+          }
         }
-      });
+      );
 
     subject.AddBinding(binding1.Object);
     subject.AddBinding(binding2.Object);
@@ -178,19 +187,22 @@ public sealed class SyncSubjectTest
 
     var calls = 0;
 
-    binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) =>
-      {
-        calls++;
-
-        if (calls == 1)
+    binding1
+      .Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback(
+        (in int value) =>
         {
-          subject.ClearBindings();
-          // these should not be cleared yet
-          subject._bindings.ShouldContain(binding1.Object);
-          subject._bindings.ShouldContain(binding2.Object);
+          calls++;
+
+          if (calls == 1)
+          {
+            subject.ClearBindings();
+            // these should not be cleared yet
+            subject._bindings.ShouldContain(binding1.Object);
+            subject._bindings.ShouldContain(binding2.Object);
+          }
         }
-      });
+      );
 
     subject.AddBinding(binding1.Object);
     subject.AddBinding(binding2.Object);
@@ -209,7 +221,7 @@ public sealed class SyncSubjectTest
       {
         log.Add($"owner {value}");
         subj.Broadcast(value);
-      }
+      },
     };
 
     var subject = new SyncSubject(owner);
@@ -220,23 +232,27 @@ public sealed class SyncSubjectTest
 
     var calls = 0;
 
-    binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) =>
-      {
-        log.Add($"callback {value}");
-        calls++;
-
-        subject.IsBusy.ShouldBeTrue();
-
-        if (calls == 1)
+    binding1
+      .Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback(
+        (in int value) =>
         {
-          subject.Perform(2);
-          // this should not be broadcast yet
-          binding2.Verify(
-            b2 => b2.InvokeCallbacks(It.Ref<int>.IsAny), Times.Never
-          );
+          log.Add($"callback {value}");
+          calls++;
+
+          subject.IsBusy.ShouldBeTrue();
+
+          if (calls == 1)
+          {
+            subject.Perform(2);
+            // this should not be broadcast yet
+            binding2.Verify(
+              b2 => b2.InvokeCallbacks(It.Ref<int>.IsAny),
+              Times.Never
+            );
+          }
         }
-      });
+      );
 
     subject.AddBinding(binding1.Object);
     subject.AddBinding(binding2.Object);
@@ -261,7 +277,9 @@ public sealed class SyncSubjectTest
       {
         log.Add($"anyAction {value}");
         if (value is int number)
+        {
           subj.Broadcast(number);
+        }
       },
       TestAction1 = (subj, value) =>
       {
@@ -272,7 +290,7 @@ public sealed class SyncSubjectTest
       {
         log.Add($"testAction2 {value}");
         subj.Broadcast(value);
-      }
+      },
     };
 
     var subject = new SyncSubject(owner);
@@ -283,23 +301,27 @@ public sealed class SyncSubjectTest
 
     var calls = 0;
 
-    binding1.Setup(b => b.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp1>.IsAny))
-      .Callback((in TestOwnerAny.TestOp1 value) =>
-      {
-        log.Add($"callback {value}");
-        calls++;
-
-        subject.IsBusy.ShouldBeTrue();
-
-        if (calls == 1)
+    binding1
+      .Setup(b => b.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp1>.IsAny))
+      .Callback(
+        (in TestOwnerAny.TestOp1 value) =>
         {
-          subject.Perform(new TestOwnerAny.TestOp2());
-          // this should not be broadcast yet
-          binding2.Verify(
-            b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp2>.IsAny), Times.Never
-          );
+          log.Add($"callback {value}");
+          calls++;
+
+          subject.IsBusy.ShouldBeTrue();
+
+          if (calls == 1)
+          {
+            subject.Perform(new TestOwnerAny.TestOp2());
+            // this should not be broadcast yet
+            binding2.Verify(
+              b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp2>.IsAny),
+              Times.Never
+            );
+          }
         }
-      });
+      );
 
     subject.AddBinding(binding1.Object);
     subject.AddBinding(binding2.Object);
@@ -307,8 +329,12 @@ public sealed class SyncSubjectTest
     subject.Perform(2);
     subject.IsBusy.ShouldBeFalse();
 
-    binding2.Verify(b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp1>.IsAny));
-    binding2.Verify(b2 => b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp2>.IsAny));
+    binding2.Verify(b2 =>
+      b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp1>.IsAny)
+    );
+    binding2.Verify(b2 =>
+      b2.InvokeCallbacks(It.Ref<TestOwnerAny.TestOp2>.IsAny)
+    );
     binding2.Verify(b2 => b2.InvokeCallbacks(2));
 
     // Order should be IPerform then IPerformAnyOperation
@@ -318,7 +344,7 @@ public sealed class SyncSubjectTest
       "anyAction TestOp1 { }", // IPerformAnyOperation (TestOp1)
       "testAction2 TestOp2 { }", //IPerform<TestOp2>
       "anyAction TestOp2 { }", //IPerformAnyOperation (TestOp2)
-      "anyAction 2" //IPerformAnyOperation (int)
+      "anyAction 2", //IPerformAnyOperation (int)
     ]);
   }
 
@@ -331,18 +357,21 @@ public sealed class SyncSubjectTest
 
     var calls = 0;
 
-    binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) =>
-      {
-        calls++;
-
-        if (calls == 1)
+    binding1
+      .Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback(
+        (in int value) =>
         {
-          subject.Dispose();
-          // should not be disposed yet
-          subject._isDisposed.ShouldBeFalse();
+          calls++;
+
+          if (calls == 1)
+          {
+            subject.Dispose();
+            // should not be disposed yet
+            subject._isDisposed.ShouldBeFalse();
+          }
         }
-      });
+      );
 
     subject.AddBinding(binding1.Object);
     subject.Perform(1);
@@ -371,17 +400,20 @@ public sealed class SyncSubjectTest
 
     var calls = 0;
 
-    binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) =>
-      {
-        calls++;
-
-        if (calls == 1)
+    binding1
+      .Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback(
+        (in int value) =>
         {
-          subject.Perform(2); // never happens because we clear
-          subject.Clear();
+          calls++;
+
+          if (calls == 1)
+          {
+            subject.Perform(2); // never happens because we clear
+            subject.Clear();
+          }
         }
-      });
+      );
 
     subject.AddBinding(binding1.Object);
 
@@ -398,18 +430,21 @@ public sealed class SyncSubjectTest
     var binding1 = new Mock<ISyncBinding>();
     var binding2 = new Mock<ISyncBinding>();
 
-    binding1.Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
-      .Callback((in int value) =>
-      {
-        if (value == 1)
+    binding1
+      .Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback(
+        (in int value) =>
         {
-          subject.Perform(2);
-          subject.Perform(3);
-          subject.Clear();
-          subject.AddBinding(binding2.Object);
-          subject.Perform(4);
+          if (value == 1)
+          {
+            subject.Perform(2);
+            subject.Perform(3);
+            subject.Clear();
+            subject.AddBinding(binding2.Object);
+            subject.Perform(4);
+          }
         }
-      });
+      );
 
     subject.AddBinding(binding1.Object);
 
@@ -420,5 +455,41 @@ public sealed class SyncSubjectTest
     binding1.Verify(b => b.InvokeCallbacks(3), Times.Never);
     binding1.Verify(b => b.InvokeCallbacks(4), Times.Once);
     binding2.Verify(b => b.InvokeCallbacks(4), Times.Once);
+  }
+
+  [Fact]
+  public void ClearKeepsBindingOpsQueuedBeforeIt()
+  {
+    var subject = BuildSubject();
+
+    var binding1 = new Mock<ISyncBinding>();
+    var binding2 = new Mock<ISyncBinding>();
+    var binding3 = new Mock<ISyncBinding>();
+
+    binding1
+      .Setup(b => b.InvokeCallbacks(It.Ref<int>.IsAny))
+      .Callback(
+        (in int value) =>
+        {
+          if (value == 1)
+          {
+            subject.AddBinding(binding2.Object);
+            subject.Perform(2);
+            subject.AddBinding(binding3.Object);
+            subject.RemoveBinding(binding2.Object);
+            subject.Clear();
+            subject.Perform(3);
+          }
+        }
+      );
+
+    subject.AddBinding(binding1.Object);
+
+    subject.Perform(1);
+
+    binding1.Verify(b => b.InvokeCallbacks(2), Times.Never);
+    binding1.Verify(b => b.InvokeCallbacks(3), Times.Once);
+    binding2.Verify(b => b.InvokeCallbacks(It.Ref<int>.IsAny), Times.Never);
+    binding3.Verify(b => b.InvokeCallbacks(3), Times.Once);
   }
 }

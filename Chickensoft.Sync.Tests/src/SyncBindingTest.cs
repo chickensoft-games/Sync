@@ -10,7 +10,8 @@ public sealed class SyncBindingTest
 {
   private sealed class TestBinding : SyncBinding
   {
-    public TestBinding(ISyncSubject subject) : base(subject) { }
+    public TestBinding(ISyncSubject subject)
+      : base(subject) { }
   }
 
   [Fact]
@@ -80,8 +81,31 @@ public sealed class SyncBindingTest
     var binding = new TestBinding(subject.Object);
     binding.Dispose();
 
-    Should.Throw<ObjectDisposedException>(() =>
-      binding.InvokeCallbacks(1)
-    );
+    Should.Throw<ObjectDisposedException>(() => binding.InvokeCallbacks(1));
+  }
+
+  [Fact]
+  public void DisposeSkipsRemovalWhenSubjectDisposed()
+  {
+    var subject = new Mock<ISyncSubject>();
+    var binding = new TestBinding(subject.Object);
+
+    subject.Setup(s => s.IsDisposed).Returns(true);
+
+    binding.Dispose();
+
+    subject.Verify(s => s.RemoveBinding(binding), Times.Never);
+    binding._subject.ShouldBeNull();
+  }
+
+  [Fact]
+  public void DisposeToleratesMissingSubject()
+  {
+    var subject = new Mock<ISyncSubject>();
+    var binding = new TestBinding(subject.Object) { _subject = null };
+
+    Should.NotThrow(binding.Dispose);
+
+    subject.Verify(s => s.RemoveBinding(binding), Times.Never);
   }
 }

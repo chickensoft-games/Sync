@@ -2,7 +2,6 @@ namespace Chickensoft.Sync;
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 /// <summary>
@@ -54,11 +53,11 @@ public interface ISyncBinding : IDisposable
 /// </summary>
 public abstract class SyncBinding : ISyncBinding
 {
-  private readonly Dictionary<Type, List<object>>
-    _callbacks;
+  private readonly Dictionary<Type, List<object>> _callbacks;
 
   private static readonly List<object> _emptyCallbacks = [];
   private bool _isDisposed;
+
   /// <summary>
   /// The subject that this binding is currently bound to, or null if it has been
   /// disposed.
@@ -95,20 +94,16 @@ public abstract class SyncBinding : ISyncBinding
   /// <param name="condition">Optional predicate that checks if the
   /// callback should be invoked for a given broadcast. If not specified, the
   /// callback will be invoked for any broadcast of the specified type.</param>
-  [
-    SuppressMessage(
-      "Style",
-      "IDE0350",
-      Justification = "Implicit lambda with ref type won't compile"
-    )
-  ]
   protected internal void AddCallback<TBroadcast>(
     Callback<TBroadcast> callback,
     Condition<TBroadcast>? condition = null
-  ) where TBroadcast : struct
+  )
+    where TBroadcast : struct
   {
     if (_isDisposed)
-    { throw DisposedException; }
+    {
+      throw DisposedException;
+    }
 
     var type = typeof(TBroadcast);
 
@@ -135,7 +130,9 @@ public abstract class SyncBinding : ISyncBinding
     where TBroadcast : struct
   {
     if (_isDisposed)
-    { throw DisposedException; }
+    {
+      throw DisposedException;
+    }
 
     var callbacks = GetCallbacks<TBroadcast>();
 
@@ -151,7 +148,7 @@ public abstract class SyncBinding : ISyncBinding
   /// </summary>
   /// <typeparam name="TBroadcast">Broadcast type.</typeparam>
   private List<object> GetCallbacks<TBroadcast>()
-      where TBroadcast : struct
+    where TBroadcast : struct
   {
     var type = typeof(TBroadcast);
 
@@ -173,7 +170,7 @@ public abstract class SyncBinding : ISyncBinding
     _callbacks.Clear();
     if (_subject is { IsDisposed: false })
     {
-      _subject!.RemoveBinding(this);
+      _subject.RemoveBinding(this);
     }
     _subject = null;
   }
@@ -181,7 +178,9 @@ public abstract class SyncBinding : ISyncBinding
   private void Dispose(bool disposing)
   {
     if (_isDisposed)
-    { return; }
+    {
+      return;
+    }
 
     if (disposing)
     {

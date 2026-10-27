@@ -59,26 +59,30 @@ public interface IAutoCache : IAutoObject<AutoCache.Binding>
   /// <typeparam name="T">The type of the value to get</typeparam>
   /// <returns>true if the <see cref="IAutoCache"/> contains an element with the
   /// specified type; otherwise, false.</returns>
-  bool TryGetValue<T>([MaybeNullWhen(false)] out T value) where T : notnull;
+  bool TryGetValue<T>([MaybeNullWhen(false)] out T value)
+    where T : notnull;
 
   /// <summary>
   /// Sets a custom equality comparer for a specific type.
   /// </summary>
   /// <param name="comparer">Comparer to use.</param>
   /// <typeparam name="T">Type to set comparer for.</typeparam>
-  void SetComparer<T>(IEqualityComparer<T> comparer) where T : notnull;
+  void SetComparer<T>(IEqualityComparer<T> comparer)
+    where T : notnull;
 }
 
 /// <inheritdoc cref="IAutoCache"/>
-public sealed class AutoCache : IAutoCache,
-  IPerformAnyOperation,
-  IPerform<AutoCache.ClearOp>
+public sealed class AutoCache
+  : IAutoCache,
+    IPerformAnyOperation,
+    IPerform<AutoCache.ClearOp>
 {
   // Atomic operations
   private readonly record struct ClearOp;
 
   // Broadcasts
   private readonly record struct RefValue(object Value);
+
   private readonly record struct ClearBroadcast;
 
   /// <summary>
@@ -86,7 +90,8 @@ public sealed class AutoCache : IAutoCache,
   /// </summary>
   public class Binding : SyncBinding
   {
-    internal Binding(ISyncSubject subject) : base(subject) { }
+    internal Binding(ISyncSubject subject)
+      : base(subject) { }
 
     /// <summary>
     /// Registers a callback that is invoked whenever a value is pushed of a
@@ -98,15 +103,11 @@ public sealed class AutoCache : IAutoCache,
     /// <typeparam name="T">Value Type to Listen For</typeparam>
     /// <returns>This binding (for chaining).</returns>
     /// <seealso cref="OnUpdate{T}(Action{T}, Func{T, bool}?)"/>
-    [
-      SuppressMessage(
-        "Style",
-        "IDE0350",
-        Justification = "Implicit lambda with ref type won't compile"
-      )
-    ]
     public Binding OnUpdate<T>(
-      Callback<T> callback, Func<T, bool>? condition = null) where T : struct
+      Callback<T> callback,
+      Func<T, bool>? condition = null
+    )
+      where T : struct
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
 
@@ -128,15 +129,11 @@ public sealed class AutoCache : IAutoCache,
     /// <typeparam name="T">Ref Type to Listen For</typeparam>
     /// <returns>This binding (for chaining).</returns>
     /// <seealso cref="OnUpdate{T}(Callback{T}, Func{T, bool}?)"/>
-    [
-      SuppressMessage(
-        "Style",
-        "IDE0350",
-        Justification = "Implicit lambda with ref type won't compile"
-      )
-    ]
     public Binding OnUpdate<T>(
-      Action<T> callback, Func<T, bool>? condition = null) where T : class
+      Action<T> callback,
+      Func<T, bool>? condition = null
+    )
+      where T : class
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
 
@@ -199,8 +196,8 @@ public sealed class AutoCache : IAutoCache,
   }
 
   /// <inheritdoc />
-  public void SetComparer<T>(IEqualityComparer<T> comparer) where T : notnull
-    => _comparerDict[typeof(T)] = comparer;
+  public void SetComparer<T>(IEqualityComparer<T> comparer)
+    where T : notnull => _comparerDict[typeof(T)] = comparer;
 
   /// <inheritdoc />
   /// <returns>true if the <see cref="AutoCache"/> contains an element with the
@@ -209,22 +206,19 @@ public sealed class AutoCache : IAutoCache,
     where T : notnull
   {
     value = default;
-    if
-    (
-      _valueDict.TryGetValue(typeof(T), out var val) &&
-      val is CachedValue<T> { HasValue: true } derivedValue
-    )
+    if (_valueDict.TryGetValue(typeof(T), out var cachedValue))
     {
-      value = derivedValue.Value!;
+      var typedCachedValue = (CachedValue<T>)cachedValue;
+      if (!typedCachedValue.HasValue)
+      {
+        return false;
+      }
+      value = typedCachedValue.Value!;
       return true;
     }
-    if
-    (
-      _refDict.TryGetValue(typeof(T), out var refVal) &&
-      refVal is T derivedRef
-    )
+    if (_refDict.TryGetValue(typeof(T), out var refVal))
     {
-      value = derivedRef;
+      value = (T)refVal;
       return true;
     }
     return false;
@@ -250,7 +244,8 @@ public sealed class AutoCache : IAutoCache,
   /// <seealso cref="Update{T}(T)"/>
   /// <param name="value">Value to update with</param>
   /// <typeparam name="T">Value Type</typeparam>
-  public void Update<T>(in T value) where T : struct
+  public void Update<T>(in T value)
+    where T : struct
   {
     var comparer = _comparerDict.TryGetValue(typeof(T), out var cmp)
       ? (IEqualityComparer<T>)cmp
@@ -300,7 +295,8 @@ public sealed class AutoCache : IAutoCache,
   /// <seealso cref="Update{T}(in T)"/>
   /// <param name="value">Value to update with</param>
   /// <typeparam name="T">Reference Type</typeparam>
-  public void Update<T>(T value) where T : class
+  public void Update<T>(T value)
+    where T : class
   {
     if (_refDict.TryGetValue(typeof(T), out var existingValue))
     {
@@ -308,14 +304,17 @@ public sealed class AutoCache : IAutoCache,
         ? (IEqualityComparer<T>)cmp
         : EqualityComparer<T>.Default;
       if (comparer.Equals((T)existingValue, value))
-      { return; }
+      {
+        return;
+      }
     }
 
     _refDict[typeof(T)] = value;
     _subject.Perform(new RefValue(value));
   }
 
-  void IPerformAnyOperation.Perform<TOp>(in TOp op) where TOp : struct
+  void IPerformAnyOperation.Perform<TOp>(in TOp op)
+    where TOp : struct
   {
     if (op is not ClearOp)
     {
@@ -326,7 +325,9 @@ public sealed class AutoCache : IAutoCache,
   void IPerform<ClearOp>.Perform(in ClearOp op)
   {
     if (Count == 0)
-    { return; }
+    {
+      return;
+    }
 
     _refDict.Clear();
     foreach (var (_, value) in _valueDict)
@@ -337,7 +338,6 @@ public sealed class AutoCache : IAutoCache,
 
     _subject.Broadcast(new ClearBroadcast());
   }
-
 
   /// <summary>
   /// The combined count of all reference types and value types stored in the

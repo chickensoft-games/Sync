@@ -48,11 +48,13 @@ public sealed class AutoValueTest
     var autoValue = new AutoValue<Animal>(boots);
     var log = new List<string>();
 
-    using var binding = autoValue.Bind()
+    using var binding = autoValue
+      .Bind()
       .OnValue(animal => log.Add($"animal {animal.Name}"))
       .OnValue(
         animal => log.Add($"animal with R name {animal.Name}"),
-        condition: (animal) => animal.Name.StartsWith('R'))
+        condition: (animal) => animal.Name.StartsWith('R')
+      )
       .OnValue<Dog>(dog => log.Add($"dog {dog.Name}"))
       .OnValue<Poodle>((poodle) => log.Add($"poodle {poodle.Name}"))
       .OnValue<Cat>(cat => log.Add($"cat {cat.Name}"))

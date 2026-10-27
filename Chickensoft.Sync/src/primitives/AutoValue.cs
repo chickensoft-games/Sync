@@ -2,7 +2,6 @@ namespace Chickensoft.Sync.Primitives;
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// <para>
@@ -43,20 +42,25 @@ public interface IAutoValue<T> : IAutoObject<AutoValue<T>.Binding>
 /// </para>
 /// </summary>
 /// <typeparam name="T">Type of the value.</typeparam>
-public sealed class AutoValue<T> : IAutoValue<T>,
+public sealed class AutoValue<T>
+  : IAutoValue<T>,
     IPerform<AutoValue<T>.UpdateOp>,
     IPerform<AutoValue<T>.SyncOp>,
     IPerform<AutoValue<T>.SyncDerivedOp>
 {
   // Atomic operations
   private readonly record struct UpdateOp(T Value);
+
   //    these 2 sync operations are used to invoke callbacks as soon as possible
   //    after they're added to mimic a BehaviorSubject
   private readonly record struct SyncOp(
-    Action<T> Callback, Func<T, bool> Condition
+    Action<T> Callback,
+    Func<T, bool> Condition
   );
+
   private readonly record struct SyncDerivedOp(
-    Action<T> Callback, Func<T, bool> Condition
+    Action<T> Callback,
+    Func<T, bool> Condition
   );
 
   // Broadcasts
@@ -67,7 +71,8 @@ public sealed class AutoValue<T> : IAutoValue<T>,
   /// </summary>
   public class Binding : SyncBinding
   {
-    internal Binding(ISyncSubject subject) : base(subject) { }
+    internal Binding(ISyncSubject subject)
+      : base(subject) { }
 
     /// <summary>
     /// Registers a callback that is invoked whenever the value changes.
@@ -76,16 +81,7 @@ public sealed class AutoValue<T> : IAutoValue<T>,
     /// <param name="condition">Optional condition that must be true for the
     /// callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    [
-      SuppressMessage(
-        "Style",
-        "IDE0350",
-        Justification = "Implicit lambda with ref type won't compile"
-      )
-    ]
-    public Binding OnValue(
-      Action<T> callback, Func<T, bool>? condition = null
-    )
+    public Binding OnValue(Action<T> callback, Func<T, bool>? condition = null)
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
 
@@ -109,18 +105,12 @@ public sealed class AutoValue<T> : IAutoValue<T>,
     /// callback to be invoked.</param>
     /// <typeparam name="TDerived">Subtype of value to listen for.</typeparam>
     /// <returns>This binding (for chaining).</returns>
-    [
-      SuppressMessage(
-        "Style",
-        "IDE0350",
-        Justification = "Implicit lambda with ref type won't compile"
-      )
-    ]
     public Binding OnValue<TDerived>(
-      Action<TDerived> callback, Func<T, bool>? condition = null
-    ) where TDerived : T
+      Action<TDerived> callback,
+      Func<T, bool>? condition = null
+    )
+      where TDerived : T
     {
-
       bool predicate(T value) =>
         value is TDerived && (condition?.Invoke(value) ?? true);
 

@@ -1,7 +1,6 @@
 namespace Chickensoft.Sync.Primitives;
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using Sync;
 
 /// <summary>
@@ -22,7 +21,8 @@ public sealed class AutoChannel : IAutoChannel, IPerformAnyOperation
   /// </summary>
   public class Binding : SyncBinding
   {
-    internal Binding(ISyncSubject subject) : base(subject) { }
+    internal Binding(ISyncSubject subject)
+      : base(subject) { }
 
     /// <summary>
     /// Registers a callback that is invoked whenever a value is pushed of a
@@ -33,15 +33,8 @@ public sealed class AutoChannel : IAutoChannel, IPerformAnyOperation
     /// callback to be invoked.</param>
     /// <typeparam name="T">Value Type to Listen For</typeparam>
     /// <returns>This binding (for chaining).</returns>
-    [
-      SuppressMessage(
-        "Style",
-        "IDE0350",
-        Justification = "Implicit lambda with ref type won't compile"
-      )
-    ]
-    public Binding On<T>(
-      Callback<T> callback, Func<T, bool>? condition = null) where T : struct
+    public Binding On<T>(Callback<T> callback, Func<T, bool>? condition = null)
+      where T : struct
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
 
@@ -89,8 +82,9 @@ public sealed class AutoChannel : IAutoChannel, IPerformAnyOperation
   /// </remarks>
   /// <param name="value">Value to update with</param>
   /// <typeparam name="T">Value Type</typeparam>
-  public void Send<T>(in T value) where T : struct => _subject.Perform(value);
+  public void Send<T>(in T value)
+    where T : struct => _subject.Perform(value);
 
-  void IPerformAnyOperation.Perform<TMessage>(in TMessage message) where TMessage : struct =>
-    _subject.Broadcast(message);
+  void IPerformAnyOperation.Perform<TMessage>(in TMessage message)
+    where TMessage : struct => _subject.Broadcast(message);
 }
