@@ -84,7 +84,7 @@ public class AutoListExample()
       new Cat("Pickles"),
       new Dog("Cookie"),
       new Dog("Brisket"),
-      new Cat("Sven")
+      new Cat("Sven"),
     ]);
 
     // hang onto the binding for as long as you want to observe, then call Dispose()
@@ -94,8 +94,9 @@ public class AutoListExample()
     binding
       .OnAdd(animal => Console.WriteLine($"Animal added: {animal}"))
       // or with its index
-      .OnAdd((index, animal) =>
-        Console.WriteLine($"Animal added at index {index}: {animal}")
+      .OnAdd(
+        (index, animal) =>
+          Console.WriteLine($"Animal added at index {index}: {animal}")
       )
       .OnClear(() => Console.WriteLine("List cleared"))
       // only called when a Dog is added
@@ -108,17 +109,22 @@ public class AutoListExample()
       )
       .OnUpdate(
         (Dog previous, Dog current) =>
-        Console.WriteLine($"Dog updated from {previous.Name} to {current.Name}")
+          Console.WriteLine(
+            $"Dog updated from {previous.Name} to {current.Name}"
+          )
       )
       .OnUpdate(
         (Dog previous, Cat current) =>
-        Console.WriteLine($"Dog {previous.Name} replaced by Cat {current.Name}")
+          Console.WriteLine(
+            $"Dog {previous.Name} replaced by Cat {current.Name}"
+          )
       )
       // or with its index
-      .OnUpdate((Dog previous, Cat current, int index) =>
-        Console.WriteLine(
-          $"Dog at index {index} updated from {previous} to Cat {current}"
-        )
+      .OnUpdate(
+        (Dog previous, Cat current, int index) =>
+          Console.WriteLine(
+            $"Dog at index {index} updated from {previous} to Cat {current}"
+          )
       );
 
     autoList.Add(new Dog("Chibi"));
@@ -130,12 +136,15 @@ public class AutoSetExample
 {
   public void Example()
   {
-    var autoSet = new AutoSet<Animal>(new HashSet<Animal> {
-      new Cat("Pickles"),
-      new Dog("Cookie"),
-      new Dog("Brisket"),
-      new Cat("Sven")
-    });
+    var autoSet = new AutoSet<Animal>(
+      new HashSet<Animal>
+      {
+        new Cat("Pickles"),
+        new Dog("Cookie"),
+        new Dog("Brisket"),
+        new Cat("Sven"),
+      }
+    );
 
     using var binding = autoSet.Bind();
 
@@ -157,13 +166,15 @@ public class AutoMapExample
 {
   public void Example()
   {
-    var autoMap = new AutoMap<string, Animal>(new Dictionary<string, Animal>
-    {
-      ["Pickles"] = new Cat("Pickles"),
-      ["Cookie"] = new Dog("Cookie"),
-      ["Brisket"] = new Dog("Brisket"),
-      ["Sven"] = new Cat("Sven")
-    });
+    var autoMap = new AutoMap<string, Animal>(
+      new Dictionary<string, Animal>
+      {
+        ["Pickles"] = new Cat("Pickles"),
+        ["Cookie"] = new Dog("Cookie"),
+        ["Brisket"] = new Dog("Brisket"),
+        ["Sven"] = new Cat("Sven"),
+      }
+    );
 
     using var binding = autoMap.Bind();
 
@@ -171,11 +182,14 @@ public class AutoMapExample
       .OnAdd(
         (key, animal) => Console.WriteLine($"Animal added: {key} -> {animal}")
       )
-      .OnRemove((key, animal) =>
-        Console.WriteLine($"Animal removed: {key} -> {animal}")
+      .OnRemove(
+        (key, animal) => Console.WriteLine($"Animal removed: {key} -> {animal}")
       )
-      .OnUpdate((key, previous, current) =>
-        Console.WriteLine($"Animal updated: {key} from {previous} to {current}")
+      .OnUpdate(
+        (key, previous, current) =>
+          Console.WriteLine(
+            $"Animal updated: {key} from {previous} to {current}"
+          )
       )
       .OnClear(() => Console.WriteLine("Map cleared"));
 

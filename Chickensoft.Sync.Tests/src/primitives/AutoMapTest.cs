@@ -21,11 +21,7 @@ public sealed class AutoMapTest
   public void InitializesWithItemsAndComparers()
   {
     var map = new AutoMap<string, string>(
-      new Dictionary<string, string>
-      {
-        ["1"] = "one",
-        ["2"] = "two"
-      },
+      new Dictionary<string, string> { ["1"] = "one", ["2"] = "two" },
       StringComparer.OrdinalIgnoreCase
     );
 
@@ -75,8 +71,10 @@ public sealed class AutoMapTest
     var log = new List<string>();
     using var binding = map.Bind();
 
-    binding.OnUpdate((key, oldValue, newValue) =>
-      log.Add($"update {key} : {oldValue} -> {newValue}"));
+    binding.OnUpdate(
+      (key, oldValue, newValue) =>
+        log.Add($"update {key} : {oldValue} -> {newValue}")
+    );
 
     map[1] = "uno";
 
@@ -140,8 +138,10 @@ public sealed class AutoMapTest
     var log = new List<string>();
     using var binding = map.Bind();
 
-    binding.OnUpdate((key, oldValue, newValue) =>
-      log.Add($"update {key} : {oldValue} -> {newValue}"));
+    binding.OnUpdate(
+      (key, oldValue, newValue) =>
+        log.Add($"update {key} : {oldValue} -> {newValue}")
+    );
 
     Should.Throw<ArgumentException>(
       () => map.Add(1, "uno"),
@@ -156,9 +156,7 @@ public sealed class AutoMapTest
     var log = new List<string>();
     using var binding = map.Bind();
 
-    binding.OnRemove(
-      (key, value) => log.Add($"remove {key} -> {value}")
-    );
+    binding.OnRemove((key, value) => log.Add($"remove {key} -> {value}"));
 
     map.Remove(1);
 
@@ -376,17 +374,15 @@ public sealed class AutoMapTest
     var log = new List<string>();
 
     using var binding = map.Bind();
-    binding.OnRemove(
-      (key, value) => log.Add($"remove {key} -> {value}")
-    );
+    binding.OnRemove((key, value) => log.Add($"remove {key} -> {value}"));
 
     map.Remove(new KeyValuePair<int, string>(1, "one"));
     map.Count.ShouldBe(1);
     log.ShouldBe(["remove 1 -> one"]);
 
     log.Clear();
-    Should.NotThrow(
-      () => map.Remove(new KeyValuePair<int, string>(2, "three"))
+    Should.NotThrow(() =>
+      map.Remove(new KeyValuePair<int, string>(2, "three"))
     );
     map.Count.ShouldBe(1);
     log.ShouldBe([]);
@@ -449,8 +445,12 @@ public sealed class AutoMapTest
   [Fact]
   public void ProvidesBoxedEnumerator()
   {
-    IEnumerable<KeyValuePair<int, string>> map =
-      new AutoMap<int, string> { [1] = "one", [2] = "two", [3] = "three" };
+    IEnumerable<KeyValuePair<int, string>> map = new AutoMap<int, string>
+    {
+      [1] = "one",
+      [2] = "two",
+      [3] = "three",
+    };
     var enumerator = map.GetEnumerator();
     var items = new List<KeyValuePair<int, string>>();
 
@@ -477,7 +477,7 @@ public sealed class AutoMapTest
     IDictionary<int, string> map = new AutoMap<int, string>
     {
       [1] = "one",
-      [2] = "two"
+      [2] = "two",
     };
 
     Should.Throw<NotSupportedException>(() => map.Remove(1));
@@ -489,10 +489,10 @@ public sealed class AutoMapTest
     ICollection<KeyValuePair<int, string>> map = new AutoMap<int, string>
     {
       [1] = "one",
-      [2] = "two"
+      [2] = "two",
     };
-    Should.Throw<NotSupportedException>(
-      () => map.Remove(new KeyValuePair<int, string>(1, "one"))
+    Should.Throw<NotSupportedException>(() =>
+      map.Remove(new KeyValuePair<int, string>(1, "one"))
     );
   }
 

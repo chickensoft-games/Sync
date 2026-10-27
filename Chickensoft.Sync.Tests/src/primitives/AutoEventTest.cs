@@ -16,9 +16,14 @@ public sealed class AutoEventTest
     public event Action? TestEventZero;
     public event Action<TestEventArgs>? TestEventOne;
     public event Action<object, TestEventArgs>? TestEventTwo;
+
     public void FireZero() => TestEventZero?.Invoke();
-    public void FireOne(string message) => TestEventOne?.Invoke(new TestEventArgs(message));
-    public void FireTwo(string message) => TestEventTwo?.Invoke(this, new TestEventArgs(message));
+
+    public void FireOne(string message) =>
+      TestEventOne?.Invoke(new TestEventArgs(message));
+
+    public void FireTwo(string message) =>
+      TestEventTwo?.Invoke(this, new TestEventArgs(message));
   }
 
   private static AutoEvent<TestEventArgs> Wrap(EventSource source) =>
@@ -78,11 +83,15 @@ public sealed class AutoEventTest
     string? received = null;
     object? obj = null;
 
-    autoEvent.Bind().On((sender, args) =>
-    {
-      received = args.Message;
-      obj = sender;
-    });
+    autoEvent
+      .Bind()
+      .On(
+        (sender, args) =>
+        {
+          received = args.Message;
+          obj = sender;
+        }
+      );
 
     source.FireTwo("hello");
 
@@ -98,20 +107,22 @@ public sealed class AutoEventTest
     var inCallback = false;
     var reentered = false;
 
-    autoEvent.Bind().On(args =>
-    {
-      if (inCallback)
+    autoEvent
+      .Bind()
+      .On(args =>
       {
-        reentered = true;
-      }
-      inCallback = true;
+        if (inCallback)
+        {
+          reentered = true;
+        }
+        inCallback = true;
 
-      if (args.Message == "first")
-      {
-        source.FireOne("second");
-      }
-      inCallback = false;
-    });
+        if (args.Message == "first")
+        {
+          source.FireOne("second");
+        }
+        inCallback = false;
+      });
 
     source.FireOne("first");
 
@@ -126,9 +137,13 @@ public sealed class AutoEventTest
     var all = new List<string>();
     var helloOnly = new List<string>();
 
-    autoEvent.Bind()
+    autoEvent
+      .Bind()
       .On(args => all.Add(args.Message))
-      .On(args => helloOnly.Add(args.Message), condition: args => args.Message == "hello");
+      .On(
+        args => helloOnly.Add(args.Message),
+        condition: args => args.Message == "hello"
+      );
 
     source.FireOne("hello");
     source.FireOne("world");
@@ -210,5 +225,64 @@ public sealed class AutoEventTest
 
     source.FireOne("after");
     messages.ShouldBe(["before"]);
+  }
+
+  [Fact]
+  public void ConditionalCallbacksWithParamsZero()
+  {
+    var source = new EventSource();
+    var autoEvent = new AutoEvent(
+      action => source.TestEventZero += action,
+      action => source.TestEventZero -= action
+    );
+    var allowed = false;
+    var calls = 0;
+
+    autoEvent.Bind().On(() => calls++, condition: () => allowed);
+
+    source.FireZero();
+    allowed = true;
+    source.FireZero();
+
+    calls.ShouldBe(1);
+  }
+
+  [Fact]
+  public void ClearsBindingsWithParamsZero()
+  {
+    var source = new EventSource();
+    var autoEvent = new AutoEvent(
+      action => source.TestEventZero += action,
+      action => source.TestEventZero -= action
+    );
+    var calls = 0;
+
+    using var binding = autoEvent.Bind();
+    binding.On(() => calls++);
+
+    source.FireZero();
+    autoEvent.ClearBindings();
+    source.FireZero();
+
+    calls.ShouldBe(1);
+  }
+
+  [Fact]
+  public void DisposeUnsubscribesFromSourceWithParamsZero()
+  {
+    var source = new EventSource();
+    var autoEvent = new AutoEvent(
+      action => source.TestEventZero += action,
+      action => source.TestEventZero -= action
+    );
+    var calls = 0;
+
+    autoEvent.Bind().On(() => calls++);
+
+    source.FireZero();
+    autoEvent.Dispose();
+    source.FireZero();
+
+    calls.ShouldBe(1);
   }
 }

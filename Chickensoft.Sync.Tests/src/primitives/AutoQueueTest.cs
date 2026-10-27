@@ -6,6 +6,7 @@ using Shouldly;
 public sealed class AutoQueueTest
 {
   private readonly record struct TestValue(int Value);
+
   private readonly record struct TestMessage(string Text);
 
   [Fact]
@@ -18,7 +19,8 @@ public sealed class AutoQueueTest
     var clearReceived = false;
     var modifyReceived = false;
 
-    queue.Bind()
+    queue
+      .Bind()
       .OnEnqueue((in int v) => enqueueReceived = true)
       .OnDequeue((in int v) => dequeueReceived = true)
       .OnDiscard(count => discardReceived = true)
@@ -43,39 +45,44 @@ public sealed class AutoQueueTest
     var enqueueReentered = false;
     var dequeueReentered = false;
 
-    queue.Bind()
-      .OnEnqueue((in int v) =>
-      {
-        if (inEnqueueCallback)
+    queue
+      .Bind()
+      .OnEnqueue(
+        (in int v) =>
         {
-          enqueueReentered = true; // signals immediate (re-entrant) delivery
+          if (inEnqueueCallback)
+          {
+            enqueueReentered = true; // signals immediate (re-entrant) delivery
+          }
+
+          inEnqueueCallback = true;
+
+          if (v == 1)
+          {
+            queue.Enqueue(2); // attempt re-entrant enqueue
+          }
+
+          inEnqueueCallback = false;
         }
-
-        inEnqueueCallback = true;
-
-        if (v == 1)
+      )
+      .OnDequeue(
+        (in int v) =>
         {
-          queue.Enqueue(2); // attempt re-entrant enqueue
+          if (inDequeueCallback)
+          {
+            dequeueReentered = true; // signals immediate (re-entrant) delivery
+          }
+
+          inDequeueCallback = true;
+
+          if (v == 1)
+          {
+            queue.Dequeue(); // attempt re-entrant dequeue
+          }
+
+          inDequeueCallback = false;
         }
-
-        inEnqueueCallback = false;
-      })
-      .OnDequeue((in int v) =>
-      {
-        if (inDequeueCallback)
-        {
-          dequeueReentered = true; // signals immediate (re-entrant) delivery
-        }
-
-        inDequeueCallback = true;
-
-        if (v == 1)
-        {
-          queue.Dequeue(); // attempt re-entrant dequeue
-        }
-
-        inDequeueCallback = false;
-      });
+      );
 
     queue.Enqueue(1);
     queue.Dequeue();
@@ -92,7 +99,8 @@ public sealed class AutoQueueTest
     var dequeueValues = new List<int>();
     var modifyCount = 0;
 
-    queue.Bind()
+    queue
+      .Bind()
       .OnEnqueue((in int v) => enqueueValues.Add(v))
       .OnDequeue((in int v) => dequeueValues.Add(v))
       .OnModify(() => modifyCount++);
@@ -125,7 +133,8 @@ public sealed class AutoQueueTest
     var dequeueValues = new List<object>();
     var modifyCount = 0;
 
-    queue.Bind()
+    queue
+      .Bind()
       .OnEnqueue((in int v) => enqueueValues.Add(v))
       .OnEnqueue((in double v) => enqueueValues.Add(v))
       .OnEnqueue((in TestValue v) => enqueueValues.Add(v))
@@ -142,8 +151,12 @@ public sealed class AutoQueueTest
     queue.Enqueue(new TestMessage("hello"));
 
     queue.Count.ShouldBe(4);
-    enqueueValues
-      .ShouldBe([42, 3.14, new TestValue(100), new TestMessage("hello")]);
+    enqueueValues.ShouldBe([
+      42,
+      3.14,
+      new TestValue(100),
+      new TestMessage("hello"),
+    ]);
     dequeueValues.ShouldBe([]);
     modifyCount.ShouldBe(4);
 
@@ -153,8 +166,12 @@ public sealed class AutoQueueTest
     }
 
     queue.Count.ShouldBe(0);
-    dequeueValues
-      .ShouldBe([42, 3.14, new TestValue(100), new TestMessage("hello")]);
+    dequeueValues.ShouldBe([
+      42,
+      3.14,
+      new TestValue(100),
+      new TestMessage("hello"),
+    ]);
     modifyCount.ShouldBe(8);
   }
 
@@ -168,7 +185,8 @@ public sealed class AutoQueueTest
     var evenDequeueValues = new List<int>();
     var modifyCount = 0;
 
-    queue.Bind()
+    queue
+      .Bind()
       .OnEnqueue((in int v) => enqueueValues.Add(v))
       .OnEnqueue(
         (in int v) => evenEnqueueValues.Add(v),
@@ -210,7 +228,8 @@ public sealed class AutoQueueTest
     var dequeueValues = new List<object>();
     var modifyCount = 0;
 
-    queue.Bind()
+    queue
+      .Bind()
       .OnDequeue((in int v) => dequeueValues.Add(v))
       .OnModify(() => modifyCount++);
 
@@ -235,17 +254,20 @@ public sealed class AutoQueueTest
     var modifyCount2 = 0;
     var modifyCount3 = 0;
 
-    queue.Bind()
+    queue
+      .Bind()
       .OnEnqueue((in int v) => enqueueValues1.Add(v))
       .OnDequeue((in int v) => dequeueValues1.Add(v))
       .OnModify(() => modifyCount1++);
 
-    queue.Bind()
+    queue
+      .Bind()
       .OnEnqueue((in int v) => enqueueValues2.Add(v))
       .OnDequeue((in int v) => dequeueValues2.Add(v))
       .OnModify(() => modifyCount2++);
 
-    queue.Bind()
+    queue
+      .Bind()
       .OnEnqueue((in int v) => enqueueValues3.Add(v))
       .OnDequeue((in int v) => dequeueValues3.Add(v))
       .OnModify(() => modifyCount3++);
@@ -285,7 +307,8 @@ public sealed class AutoQueueTest
     var discardCount = 0;
     var modifyCount = 0;
 
-    queue.Bind()
+    queue
+      .Bind()
       .OnEnqueue((in int v) => enqueueValues.Add(v))
       .OnDequeue((in int v) => dequeueValues.Add(v))
       .OnDiscard(count => discardCount += count)
@@ -297,7 +320,7 @@ public sealed class AutoQueueTest
     queue.Enqueue(4);
     queue.Enqueue(5);
 
-    queue.Dequeue();  // dequeue 1
+    queue.Dequeue(); // dequeue 1
     queue.Discard(2); // discard 2, 3
 
     // dequeue 4, 5
@@ -323,7 +346,8 @@ public sealed class AutoQueueTest
     var clearCount = 0;
     var modifyCount = 0;
 
-    var binding = queue.Bind()
+    var binding = queue
+      .Bind()
       .OnClear(() => clearCount++)
       .OnModify(() => modifyCount++);
 
@@ -355,8 +379,7 @@ public sealed class AutoQueueTest
     var queue = new AutoQueue();
     var modifyCount = 0;
 
-    var binding = queue.Bind()
-      .OnModify(() => modifyCount++);
+    var binding = queue.Bind().OnModify(() => modifyCount++);
 
     queue.Enqueue(1);
     modifyCount.ShouldBe(1);
@@ -373,8 +396,7 @@ public sealed class AutoQueueTest
     var queue = new AutoQueue();
     var modifyCount = 0;
 
-    var binding = queue.Bind()
-      .OnModify(() => modifyCount++);
+    var binding = queue.Bind().OnModify(() => modifyCount++);
 
     queue.Enqueue(1);
     queue.Enqueue(2);

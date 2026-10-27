@@ -36,6 +36,12 @@ jobs:
           # Use the .NET SDK from global.json in the root of the repository.
           global-json-file: global.json
 
+      - name: 🧰 Restore Tools
+        run: dotnet tool restore
+
+      - name: 💅 Check Formatting
+        run: dotnet csharpier check .
+
       - name: 📦 Restore Dependencies
         run: dotnet restore
 

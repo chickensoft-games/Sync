@@ -1,5 +1,6 @@
 {
   "recommendations": [
+    "csharpier.csharpier-vscode",
     "ms-dotnettools.csharp",
     "selcukermaya.se-csproj-extensions",
     "josefpihrt-vscode.roslynator",

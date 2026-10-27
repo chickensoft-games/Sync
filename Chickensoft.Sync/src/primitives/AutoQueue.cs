@@ -1,7 +1,6 @@
 namespace Chickensoft.Sync.Primitives;
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using Chickensoft.Collections;
 
 /// <summary>
@@ -22,16 +21,22 @@ public sealed class AutoQueue
 {
   // Atomic operations
   private readonly record struct DequeueOp;
+
   private readonly record struct DiscardOp(int Count);
+
   private readonly record struct ClearOp;
 
   // Broadcasts
   private readonly record struct EnqueueBroadcast<T>(T Value)
     where T : struct;
+
   private readonly record struct DequeueBroadcast<T>(T Value)
     where T : struct;
+
   private readonly record struct DiscardBroadcast(int Count);
+
   private readonly record struct ClearBroadcast;
+
   private readonly record struct ModifyBroadcast;
 
   /// <summary>
@@ -51,12 +56,10 @@ public sealed class AutoQueue
     /// callback to be invoked.</param>
     /// <typeparam name="T">Value Type to Listen For</typeparam>
     /// <returns>This binding (for chaining).</returns>
-    [SuppressMessage(
-      "Style",
-      "IDE0350",
-      Justification = "Implicit lambda with ref type won't compile"
-    )]
-    public Binding OnEnqueue<T>(Callback<T> callback, Func<T, bool>? condition = null)
+    public Binding OnEnqueue<T>(
+      Callback<T> callback,
+      Func<T, bool>? condition = null
+    )
       where T : struct
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
@@ -78,12 +81,10 @@ public sealed class AutoQueue
     /// callback to be invoked.</param>
     /// <typeparam name="T">Value Type to Listen For</typeparam>
     /// <returns>This binding (for chaining).</returns>
-    [SuppressMessage(
-      "Style",
-      "IDE0350",
-      Justification = "Implicit lambda with ref type won't compile"
-    )]
-    public Binding OnDequeue<T>(Callback<T> callback, Func<T, bool>? condition = null)
+    public Binding OnDequeue<T>(
+      Callback<T> callback,
+      Func<T, bool>? condition = null
+    )
       where T : struct
     {
       bool predicate(T value) => condition?.Invoke(value) ?? true;
@@ -144,7 +145,8 @@ public sealed class AutoQueue
     }
 
     public void HandleValue<TValue>(in TValue value)
-      where TValue : struct => _subject.Broadcast(new DequeueBroadcast<TValue>(value));
+      where TValue : struct =>
+      _subject.Broadcast(new DequeueBroadcast<TValue>(value));
   }
 
   /// <summary>

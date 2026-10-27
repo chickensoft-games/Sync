@@ -169,7 +169,8 @@ public sealed class AutoSetTest
   {
     var set = new AutoSet<int> { 1, 2, 3 } as IEnumerable<int>;
     var enumerator = set.GetEnumerator();
-    (set as IEnumerable).GetEnumerator()
+    (set as IEnumerable)
+      .GetEnumerator()
       .ShouldBeOfType<HashSet<int>.Enumerator>();
 
     var items = new List<int>();

@@ -6,6 +6,7 @@ using Sync.Primitives;
 public sealed class AutoCacheTest
 {
   private readonly record struct TestValue(int Value);
+
   private sealed record TestRef(int Value);
 
   [Fact]
@@ -23,7 +24,8 @@ public sealed class AutoCacheTest
 
     var values = new List<object>();
 
-    cache.Bind()
+    cache
+      .Bind()
       .OnUpdate((in int v) => values.Add(v))
       .OnUpdate((in double v) => values.Add(v))
       .OnUpdate((string v) => values.Add(v));
@@ -50,8 +52,7 @@ public sealed class AutoCacheTest
 
     var values = new List<object>();
 
-    cache.Bind()
-      .OnUpdate((in int v) => values.Add(v));
+    cache.Bind().OnUpdate((in int v) => values.Add(v));
 
     cache.Update(5);
     cache.Update(5);
@@ -72,8 +73,7 @@ public sealed class AutoCacheTest
     cache.SetComparer(new AllSameComparer());
 
     var values = new List<object>();
-    cache.Bind()
-      .OnUpdate((in int v) => values.Add(v));
+    cache.Bind().OnUpdate((in int v) => values.Add(v));
 
     cache.Update(5);
     cache.Update(10);
@@ -96,11 +96,13 @@ public sealed class AutoCacheTest
     var autoCache = new AutoCache();
     var log = new List<string>();
 
-    using var binding = autoCache.Bind()
+    using var binding = autoCache
+      .Bind()
       .OnUpdate<Animal>(animal => log.Add($"animal {animal.Name}"))
       .OnUpdate<Animal>(
         animal => log.Add($"animal with R name {animal.Name}"),
-        condition: (animal) => animal.Name.StartsWith('R'))
+        condition: (animal) => animal.Name.StartsWith('R')
+      )
       .OnUpdate<Dog>(dog => log.Add($"dog {dog.Name}"))
       .OnUpdate<Poodle>((poodle) => log.Add($"poodle {poodle.Name}"))
       .OnUpdate<Cat>(cat => log.Add($"cat {cat.Name}"))
@@ -276,6 +278,100 @@ public sealed class AutoCacheTest
   private sealed class AllSameComparer : IEqualityComparer<int>
   {
     public bool Equals(int x, int y) => true;
+
     public int GetHashCode(int obj) => 0;
+  }
+
+  [Fact]
+  public void UpdateAfterClearBroadcastsAndCounts()
+  {
+    var autoCache = new AutoCache();
+    var values = new List<int>();
+
+    using var binding = autoCache.Bind();
+    binding.OnUpdate((in int v) => values.Add(v));
+
+    autoCache.Update(1);
+    autoCache.Clear();
+
+    autoCache.TryGetValue<int>(out var clearedValue).ShouldBeFalse();
+    clearedValue.ShouldBe(default);
+
+    autoCache.Update(1);
+
+    autoCache.Count.ShouldBe(1);
+    autoCache.TryGetValue<int>(out var value).ShouldBeTrue();
+    value.ShouldBe(1);
+    values.ShouldBe([1, 1]);
+  }
+
+  [Fact]
+  public void ClearDoesNotBroadcastWhenEmpty()
+  {
+    var autoCache = new AutoCache();
+    var log = new List<string>();
+
+    using var binding = autoCache.Bind();
+    binding.OnClear(() => log.Add("clear"));
+
+    autoCache.Clear();
+
+    log.ShouldBeEmpty();
+  }
+
+  [Fact]
+  public void OnUpdateRespectsValueCondition()
+  {
+    var autoCache = new AutoCache();
+    var values = new List<int>();
+
+    using var binding = autoCache.Bind();
+    binding.OnUpdate((in int v) => values.Add(v), condition: v => v > 1);
+
+    autoCache.Update(1);
+    autoCache.Update(2);
+
+    values.ShouldBe([2]);
+  }
+
+  [Fact]
+  public void DoesNotBroadcastUnchangedRefs()
+  {
+    var autoCache = new AutoCache();
+    var boots = new Dog("Boots");
+    var log = new List<string>();
+
+    using var binding = autoCache.Bind();
+    binding.OnUpdate<Dog>(dog => log.Add(dog.Name));
+
+    autoCache.Update(boots);
+    autoCache.Update(boots);
+
+    log.ShouldBe(["Boots"]);
+  }
+
+  [Fact]
+  public void UsesConfiguredRefComparer()
+  {
+    var autoCache = new AutoCache();
+    var log = new List<string>();
+
+    autoCache.SetComparer(new SameNameComparer());
+
+    using var binding = autoCache.Bind();
+    binding.OnUpdate<Dog>(dog => log.Add(dog.Name));
+
+    autoCache.Update(new Dog("Boots"));
+    autoCache.Update(new Dog("Boots"));
+    autoCache.Update(new Dog("Cookie"));
+
+    log.ShouldBe(["Boots", "Cookie"]);
+  }
+
+  private sealed class SameNameComparer : IEqualityComparer<Dog>
+  {
+    public bool Equals(Dog? x, Dog? y) => x?.Name == y?.Name;
+
+    public int GetHashCode(Dog obj) => obj.Name.GetHashCode();
   }
 }

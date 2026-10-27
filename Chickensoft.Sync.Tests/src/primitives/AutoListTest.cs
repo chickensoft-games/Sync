@@ -93,9 +93,7 @@ public sealed class AutoListTest
     var log = new List<string>();
     using var binding = list.Bind();
 
-    binding.OnUpdate(
-      (prev, next, idx) => log.Add($"{prev}->{next} @ {idx}")
-    );
+    binding.OnUpdate((prev, next, idx) => log.Add($"{prev}->{next} @ {idx}"));
 
     list[0] = "b";
 
@@ -122,7 +120,8 @@ public sealed class AutoListTest
   public void IndexerDoesNotUpdateWhenComparerSaysEqual()
   {
     var list = new AutoList<string>(
-      ["A"], comparer: StringComparer.OrdinalIgnoreCase
+      ["A"],
+      comparer: StringComparer.OrdinalIgnoreCase
     );
     var called = false;
     using var binding = list.Bind();
@@ -139,7 +138,8 @@ public sealed class AutoListTest
   public void IndexerDoesNotBroadcastModificationWhenComparerSaysEqual()
   {
     var list = new AutoList<string>(
-      ["A"], comparer: StringComparer.OrdinalIgnoreCase
+      ["A"],
+      comparer: StringComparer.OrdinalIgnoreCase
     );
     var called = false;
     using var binding = list.Bind();
@@ -159,9 +159,7 @@ public sealed class AutoListTest
     var log = new List<string>();
     using var binding = list.Bind();
 
-    binding.OnRemove(
-      (item, index) => log.Add($"remove {item} @ {index}")
-    );
+    binding.OnRemove((item, index) => log.Add($"remove {item} @ {index}"));
 
     list.RemoveAt(1);
 
@@ -228,7 +226,8 @@ public sealed class AutoListTest
   public void ContainsAndIndexOfRespectComparer()
   {
     var list = new AutoList<string>(
-      ["Aardvark", "Bear"], StringComparer.OrdinalIgnoreCase
+      ["Aardvark", "Bear"],
+      StringComparer.OrdinalIgnoreCase
     );
     list.Contains("bear").ShouldBeTrue();
     list.IndexOf("bear").ShouldBe(1);
@@ -310,7 +309,7 @@ public sealed class AutoListTest
       "updated an animal Garbage Cat->Brisket",
       "updated a cat to a dog Garbage Cat->Brisket",
       "remove animal Tiger",
-      "remove cat Tiger @ 4"
+      "remove cat Tiger @ 4",
     ]);
   }
 

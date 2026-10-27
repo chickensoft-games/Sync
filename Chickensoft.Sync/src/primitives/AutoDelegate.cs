@@ -1,7 +1,6 @@
 namespace Chickensoft.Sync.Primitives;
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// <para>
@@ -16,14 +15,14 @@ using System.Diagnostics.CodeAnalysis;
 /// <typeparam name="TEventArgs">The type of event arguments. Use a
 /// <see cref="ValueTuple"/> to represent multiple delegate parameters as a
 /// single value (e.g., <c>(string Message, int Count)</c>).</typeparam>
-public interface IAutoDelegate<TDelegate, TEventArgs> :
-  IAutoObject<AutoDelegate<TDelegate, TEventArgs>.Binding>
+public interface IAutoDelegate<TDelegate, TEventArgs>
+  : IAutoObject<AutoDelegate<TDelegate, TEventArgs>.Binding>
   where TDelegate : Delegate;
 
 /// <inheritdoc cref="IAutoDelegate{TDelegate,TEventArgs}"/>
-public sealed class AutoDelegate<TDelegate, TEventArgs> :
-  IAutoDelegate<TDelegate, TEventArgs>,
-  IPerform<AutoDelegate<TDelegate, TEventArgs>.RaiseOp>
+public sealed class AutoDelegate<TDelegate, TEventArgs>
+  : IAutoDelegate<TDelegate, TEventArgs>,
+    IPerform<AutoDelegate<TDelegate, TEventArgs>.RaiseOp>
   where TDelegate : Delegate
 {
   // Atomic operations
@@ -37,7 +36,8 @@ public sealed class AutoDelegate<TDelegate, TEventArgs> :
   /// </summary>
   public class Binding : SyncBinding
   {
-    internal Binding(ISyncSubject subject) : base(subject) { }
+    internal Binding(ISyncSubject subject)
+      : base(subject) { }
 
     /// <summary>
     /// Registers a callback that is invoked whenever the event is raised.
@@ -46,15 +46,9 @@ public sealed class AutoDelegate<TDelegate, TEventArgs> :
     /// <param name="condition">Optional condition that must be true for the
     /// callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    [
-      SuppressMessage(
-        "Style",
-        "IDE0350",
-        Justification = "Implicit lambda with ref type won't compile"
-      )
-    ]
     public Binding On(
-      Action<TEventArgs> callback, Func<TEventArgs, bool>? condition = null
+      Action<TEventArgs> callback,
+      Func<TEventArgs, bool>? condition = null
     )
     {
       bool predicate(TEventArgs args) => condition?.Invoke(args) ?? true;

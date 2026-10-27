@@ -1,6 +1,5 @@
 namespace Chickensoft.Sync.Tests.Primitives;
 
-using System;
 using Shouldly;
 using Sync.Primitives;
 
@@ -16,18 +15,26 @@ public sealed class AutoDelegateTest
   {
     public event SingleParamDelegate? SingleEvent;
     public event TupleParamDelegate? TupleEvent;
+
     public void FireSingle(string message) => SingleEvent?.Invoke(message);
-    public void FireTuple(string message, int count) => TupleEvent?.Invoke(message, count);
+
+    public void FireTuple(string message, int count) =>
+      TupleEvent?.Invoke(message, count);
   }
 
-  private static AutoDelegate<SingleParamDelegate, string> WrapSingle(EventSource source) =>
+  private static AutoDelegate<SingleParamDelegate, string> WrapSingle(
+    EventSource source
+  ) =>
     new(
       onEvent => message => onEvent(message),
       h => source.SingleEvent += h,
       h => source.SingleEvent -= h
     );
 
-  private static AutoDelegate<TupleParamDelegate, (string Message, int Count)> WrapTuple(EventSource source) =>
+  private static AutoDelegate<
+    TupleParamDelegate,
+    (string Message, int Count)
+  > WrapTuple(EventSource source) =>
     new(
       onEvent => (message, count) => onEvent((message, count)),
       h => source.TupleEvent += h,
@@ -68,11 +75,13 @@ public sealed class AutoDelegateTest
     string? receivedMsg = null;
     int? receivedCount = null;
 
-    handler.Bind().On(args =>
-    {
-      receivedMsg = args.Message;
-      receivedCount = args.Count;
-    });
+    handler
+      .Bind()
+      .On(args =>
+      {
+        receivedMsg = args.Message;
+        receivedCount = args.Count;
+      });
 
     source.FireTuple("hello", 42);
 
@@ -88,13 +97,21 @@ public sealed class AutoDelegateTest
     var inCallback = false;
     var reentered = false;
 
-    handler.Bind().On(msg =>
-    {
-      if (inCallback) { reentered = true; }
-      inCallback = true;
-      if (msg == "first") { source.FireSingle("second"); }
-      inCallback = false;
-    });
+    handler
+      .Bind()
+      .On(msg =>
+      {
+        if (inCallback)
+        {
+          reentered = true;
+        }
+        inCallback = true;
+        if (msg == "first")
+        {
+          source.FireSingle("second");
+        }
+        inCallback = false;
+      });
 
     source.FireSingle("first");
 
@@ -109,9 +126,10 @@ public sealed class AutoDelegateTest
     var all = new List<string>();
     var helloOnly = new List<string>();
 
-    handler.Bind()
-      .On(msg => all.Add(msg))
-      .On(msg => helloOnly.Add(msg), condition: msg => msg == "hello");
+    handler
+      .Bind()
+      .On(all.Add)
+      .On(helloOnly.Add, condition: msg => msg == "hello");
 
     source.FireSingle("hello");
     source.FireSingle("world");
@@ -129,7 +147,8 @@ public sealed class AutoDelegateTest
     var all = new List<(string, int)>();
     var highOnly = new List<(string, int)>();
 
-    handler.Bind()
+    handler
+      .Bind()
       .On(args => all.Add((args.Message, args.Count)))
       .On(
         args => highOnly.Add((args.Message, args.Count)),
@@ -151,8 +170,8 @@ public sealed class AutoDelegateTest
     var messages1 = new List<string>();
     var messages2 = new List<string>();
 
-    handler.Bind().On(msg => messages1.Add(msg));
-    handler.Bind().On(msg => messages2.Add(msg));
+    handler.Bind().On(messages1.Add);
+    handler.Bind().On(messages2.Add);
 
     source.FireSingle("ping");
 
@@ -168,7 +187,7 @@ public sealed class AutoDelegateTest
     var messages = new List<string>();
 
     var binding = handler.Bind();
-    binding.On(msg => messages.Add(msg));
+    binding.On(messages.Add);
 
     source.FireSingle("first");
     messages.ShouldBe(["first"]);
@@ -187,7 +206,7 @@ public sealed class AutoDelegateTest
     var messages = new List<string>();
 
     using var binding = handler.Bind();
-    binding.On(msg => messages.Add(msg));
+    binding.On(messages.Add);
 
     source.FireSingle("a");
     source.FireSingle("b");
@@ -206,7 +225,7 @@ public sealed class AutoDelegateTest
     var handler = WrapSingle(source);
     var messages = new List<string>();
 
-    handler.Bind().On(msg => messages.Add(msg));
+    handler.Bind().On(messages.Add);
 
     source.FireSingle("before");
     messages.ShouldBe(["before"]);

@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -12,5 +11,4 @@
     <PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
     <PackageReference Include="R3" Version="1.3.0" />
   </ItemGroup>
-
 </Project>

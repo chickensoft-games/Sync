@@ -65,13 +65,6 @@ public sealed class AutoEvent<#= tpBrk #> :
     /// <param name="condition">Optional condition that must be true for the
     /// callback to be invoked.</param>
     /// <returns>This binding (for chaining).</returns>
-    [
-      SuppressMessage(
-        "Style",
-        "IDE0350",
-        Justification = "Implicit lambda with ref type won't compile"
-      )
-    ]
     public Binding On(
       <#= actionType #> callback, <#= funcType #>? condition = null
     )
