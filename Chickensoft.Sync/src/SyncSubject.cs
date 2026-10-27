@@ -271,6 +271,22 @@ public sealed class SyncSubject : ISyncSubject
     { throw DisposedException; }
 
     _ops.Clear();
+    RemovePendingPerformOps();
+  }
+
+  private void RemovePendingPerformOps()
+  {
+    var pendingCount = _internalOps.Count;
+
+    for (var index = 0; index < pendingCount; index++)
+    {
+      var op = _internalOps.Dequeue();
+
+      if (op.Operation != INTERNAL_OP_TYPE.PERFORM)
+      {
+        _internalOps.Enqueue(op);
+      }
+    }
   }
 
   private void Process()
