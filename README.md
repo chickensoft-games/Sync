@@ -447,6 +447,60 @@ binding.On((sender, args) => Console.WriteLine($"{sender.GetType()} - Reading: {
 sensor.TakeReading(79); // Sensor - Reading: 79
 ```
 
+## 🔗 AutoDelegate
+
+`AutoDelegate<TDelegate, TEventArgs>` is an observable adapter for a C# event that uses a **custom delegate type**, i.e., any delegate that isn't a plain `Action` or `Action<T>`.
+Use `AutoDelegate` instead of `AutoEvent` when the event's delegate type is not an `Action` variant (e.g., it was declared with the `delegate` keyword and has a specific name, or has a signature that doesn't match `Action<T1, T2, ...>`).
+You provide a `converter` lambda that has the internal `Action<TEventArgs>` callback as a parameter and returns a `TDelegate` instance that invokes it.
+
+```csharp
+delegate void StatusChanged(string status, int code);
+
+public class Service
+{
+  public event StatusChanged? OnStatus;
+  public void SetStatus(string status, int code) => OnStatus?.Invoke(status, code);
+}
+
+var service = new Service();
+
+// Pack the two delegate parameters into a ValueTuple for TEventArgs
+var autoDelegate = new AutoDelegate<StatusChanged, (string Status, int Code)>(
+  onEvent => (status, code) => onEvent((status, code)),  // converter
+  h => service.OnStatus += h,                             // subscribe
+  h => service.OnStatus -= h                              // unsubscribe
+);
+
+using var binding = autoDelegate.Bind();
+
+binding.On(args => Console.WriteLine($"Status: {args.Status} ({args.Code})"));
+
+service.SetStatus("Ready", 200);   // Status: Ready (200)
+service.SetStatus("Error", 500);   // Status: Error (500)
+```
+
+You can also partially forward the parameters if you'd like:
+
+```csharp
+var autoDelegate = new AutoDelegate<StatusChanged, string>(
+  onEvent => (status, _) => onEvent(status),  // converter
+  h => service.OnStatus += h,                             // subscribe
+  h => service.OnStatus -= h                              // unsubscribe
+);
+```
+
+For single-parameter custom delegates, `TEventArgs` is simply the parameter type directly:
+
+```csharp
+delegate void MessageReceived(string message);
+
+var autoDelegate = new AutoDelegate<MessageReceived, string>(
+  onEvent => message => onEvent(message),
+  h => source.OnMessage += h,
+  h => source.OnMessage -= h
+);
+```
+
 ## 🗑️ CompositeDisposable
 `CompositeDisposable` represents a set of disposable resources that are disposed together. It is a utility class for bundling up multiple disposables, so that you can dispose them all with one `Dispose()` call. Sync also provides a `DisposeWith()` extension method for disposables that can be chained for convenience.
 
